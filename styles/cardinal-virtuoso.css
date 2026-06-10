@@ -203,6 +203,23 @@
   box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
 .cv-statusbar .grow { flex: 1; }
 
+/* quirks */
+.cv-quirkbox { margin-top: 4px; }
+.cv-quirklist { flex-direction: column; align-items: stretch; gap: 3px; margin-top: 4px; }
+.cv-quirklist .cv-mini { text-align: left; font-size: 10px; }
+
+/* admin adjust */
+.cv-adjrow .cv-act-btns { align-items: center; }
+.cv-adjrow .cv-input-num { width: 52px; }
+
+/* event log */
+.cv-eventlog { margin-top: 10px; }
+.cv-eventlog summary { font-size: 11px; cursor: pointer; }
+.cv-loglist { margin: 4px 0 0; padding: 5px 6px 5px 20px; max-height: 120px; overflow-y: auto;
+  background: #fff; font-size: 10px; color: var(--text-dim);
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-loglist li { margin: 1px 0; }
+
 /* responsive + a11y */
 @media (max-width: 560px) { .cv-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

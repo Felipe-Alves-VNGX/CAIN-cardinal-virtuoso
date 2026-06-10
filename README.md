@@ -33,19 +33,33 @@ in the same PR; merges without a version bump don't release.
   own User flag; the GM can write anyone's. No extra permissions to configure.
 
 ## Mechanics (fan-made SEER+TEMERITY)
-- **LINK / BONDED**: toggle a bond with a virtue (start at affinity 0).
+All 9 virtues are tracked: the Vol. 1 six plus Chastity, Sobriety and Absolution
+from the Harpocrates Dossier.
+
+- **LINK / BONDED**: toggle a bond with a virtue (starts at affinity 0). Bond pacing
+  is enforced: 1 new virtue per completed mission (+1 per time off); GMs bypass.
+  Linking or upgrading a virtue triggers its rivals' **bond reactions**
+  (e.g. bonding Charity → Justice −10; bonding Faith → Chastity +3).
 - **Conversation** (1×/mission, 2× with X2 mod): tick any of LIKE TOPIC +2 / WENT WELL +2 /
   CONNECTION +2 (or DISLIKE −2), then *LOG CONVERSATION* once.
 - **Contraband** (2×/mission, 3× with X2 mod): FAV/LIKE +3, NEUTRAL +1, DISLIKE −3.
-  Hate-mail to unbonded virtues can only lower affinity and ignores the limit.
-- **Break**: affinity ≤ −5 resets it to 0, bumps brokenCount, and raises that virtue's rank
-  requirements by +3 each.
-- **Close Mission**: applies any earned rank-ups (affinity must meet the requirement) and
-  resets per-mission counters.
+  Every gift (and hate-mail) spends 1 HQ stock. Closing a mission collects
+  covert + ½CAT (min 2, +1 for Gate users), capped at 6 in HQ.
+  Hate-mail to unbonded virtues can only lower affinity and ignores the gift limit.
+- **Quirks**: per-virtue triggers as one-click buttons (some with per-mission caps).
+  The GM also gets a free ± adjust per virtue for table rulings.
+- **Heart Break**: affinity ≤ −5 flags the bond 💔 and locks it; when the mission
+  closes it resets to unbonded/0 and raises that virtue's requirements by +3.
+- **Close Mission**: applies earned rank-ups (affinity must meet the requirement),
+  clears broken bonds, collects the contraband haul and resets per-mission counters.
+- **Time Off** (X2 mod only): rank-ups + limit reset + 1 extra bond slot,
+  without closing the mission.
+- Every affinity change lands in a per-dossier **event log** (last 40 entries).
 
 ## Settings
-**Game Settings → Configure Settings → Cardinal Virtuoso → Affinity requirements per rank**
-(default `3,8,15`). Adjust to your campaign's pacing.
+**Game Settings → Configure Settings → Cardinal Virtuoso**:
+- *Affinity requirements per rank* — default `5,10,18` (Harpocrates Dossier).
+- *Enforce bond pacing* — disable to allow free linking, as in v1.0.
 
 ## Roadmap notes
 - Storage is Foundry-native flags by design. A SQLite export (for cross-system / Power BI use)
