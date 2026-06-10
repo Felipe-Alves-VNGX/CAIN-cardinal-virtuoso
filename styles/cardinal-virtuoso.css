@@ -1,0 +1,208 @@
+/* ============================================================
+   CARDINAL VIRTUOSO — Höllvania '99 desktop (Windows 95 chrome)
+   SEER//TEMERITY internal software, running on a 1999 terminal.
+   Signature: real beveled window chrome + group-box virtue panels.
+   All bevels are hand-rolled box-shadows — no external CSS deps.
+   ============================================================ */
+
+.cv-app .window-content { padding: 0; background: transparent; }
+
+.cv-root {
+  /* Win95 system palette */
+  --gray:    #c0c0c0;
+  --gray-d:  #808080;
+  --gray-dd: #000000;
+  --light:   #ffffff;
+  --face:    #c3c7cb;
+  --title-a: #000080;
+  --title-b: #1084d0;
+  --title-off-a: #808080;
+  --title-off-b: #b5b5b5;
+  --text:    #000000;
+  --text-dim:#404040;
+  --cain:    #aa0000;     /* CAIN alert red */
+  --cain-bg: #ffecec;
+  --good:    #006000;
+  --good-bg: #e6ffe6;
+  --sys: "Pixelated MS Sans Serif", Tahoma, "MS Sans Serif", Geneva, sans-serif;
+
+  font-family: var(--sys);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--gray);
+  border: 1px solid var(--gray-dd);
+  box-shadow: inset 1px 1px 0 var(--light), inset -1px -1px 0 var(--gray-d);
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+/* helpers: raised & sunken bevels */
+.cv-raised { box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face); background: var(--gray); }
+.cv-sunken { box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); background: #fff; }
+
+/* ---------- TITLE BAR ---------- */
+.cv-titlebar {
+  display: flex; align-items: center; gap: 6px;
+  background: linear-gradient(90deg, var(--title-a), var(--title-b));
+  color: #fff; padding: 3px 4px; margin: 2px;
+  font-weight: bold; letter-spacing: .02em;
+}
+.cv-titlebar .cv-ico { width: 16px; height: 16px; display: inline-grid; place-items: center;
+  background: var(--cain); color: #fff; font-size: 11px; font-weight: bold; }
+.cv-titlebar .cv-tt { flex: 1; font-size: 12px; }
+.cv-titlebar .cv-tbtns { display: flex; gap: 2px; }
+.cv-tbtn { width: 16px; height: 14px; font-size: 9px; line-height: 1; display: grid; place-items: center;
+  background: var(--gray); border: 0; cursor: default;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d); }
+
+/* ---------- MENU BAR ---------- */
+.cv-menubar { display: flex; gap: 2px; padding: 2px 4px; margin: 0 2px; }
+.cv-menubar span { padding: 2px 8px; }
+.cv-menubar span:hover { background: var(--title-a); color: #fff; }
+.cv-menubar u { text-decoration: underline; }
+
+/* ---------- BODY ---------- */
+.cv-body { padding: 8px; }
+.cv-scanlines { display: none; } /* killed: this is a desktop, not a CRT */
+
+/* hidden legacy header replaced by titlebar; keep marquee strip as status */
+.cv-head { display: none; }
+.cv-title { display: none; }
+
+.cv-gmbar { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+.cv-gmbar .cv-lbl { font-weight: bold; }
+
+/* ---------- META (toolbar look) ---------- */
+.cv-meta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 6px 8px; margin-bottom: 8px;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face);
+  background: var(--gray);
+}
+.cv-field { display: flex; align-items: center; gap: 5px; }
+.cv-field-sm { gap: 4px; }
+.cv-lbl { font-size: 11px; color: var(--text); }
+.cv-input, .cv-select {
+  font-family: var(--sys); font-size: 12px; padding: 2px 4px; color: #000;
+  background: #fff; border: 0;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d);
+}
+.cv-input:focus, .cv-select:focus { outline: 1px dotted #000; outline-offset: -3px; }
+.cv-input-num { width: 46px; text-align: center; }
+.cv-stat { font-weight: bold; font-size: 14px; padding: 0 4px; color: var(--title-a); }
+
+/* checkbox-style toggle for X2 */
+.cv-toggle { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d);
+  background: #fff; }
+.cv-toggle input { position: absolute; opacity: 0; width: 16px; height: 16px; margin: 0; cursor: pointer; }
+.cv-toggle span { width: 16px; height: 16px; }
+.cv-toggle input:checked ~ span::after { content: "✔"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; color: #000; }
+
+.cv-limits {
+  font-size: 11px; color: var(--text-dim); margin-bottom: 8px; padding: 3px 6px;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d);
+  background: var(--gray);
+}
+
+/* ---------- VIRTUE GRID (group boxes) ---------- */
+.cv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.cv-card {
+  position: relative; padding: 10px 8px 8px;
+  background: var(--gray);
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face);
+}
+.cv-card::before { display: none; }
+.cv-card.is-bonded { }
+.cv-card.is-broken { background: var(--cain-bg); }
+
+.cv-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.cv-glyph {
+  width: 26px; height: 26px; display: grid; place-items: center; font-weight: bold; font-size: 13px;
+  color: #fff; background: var(--title-a);
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light);
+}
+.cv-card.is-broken .cv-glyph { background: var(--cain); }
+.cv-card-id { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.15; }
+.cv-vname { font-weight: bold; font-size: 13px; }
+.cv-vepi { font-size: 10px; color: var(--text-dim); }
+
+/* buttons: real 98.css-style raised, sink on active */
+.cv-bond-toggle, .cv-mini, .cv-btn, .cv-log {
+  font-family: var(--sys); font-size: 11px; color: #000; cursor: pointer;
+  background: var(--gray); border: 0; padding: 3px 8px; min-height: 21px;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face);
+}
+.cv-bond-toggle:active, .cv-mini:active, .cv-btn:active, .cv-log:active {
+  box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light), inset 2px 2px 0 var(--gray-d);
+  padding: 4px 7px 2px 9px;
+}
+.cv-bond-toggle:focus-visible, .cv-mini:focus-visible, .cv-btn:focus-visible {
+  outline: 1px dotted #000; outline-offset: -4px;
+}
+.cv-bond-toggle.on { font-weight: bold; }
+.cv-bond-toggle.on::before { content: "● "; color: var(--good); }
+
+.cv-mini.good { color: var(--good); }
+.cv-mini.bad  { color: var(--cain); }
+
+/* readout */
+.cv-readout { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px;
+  padding: 6px; background: #fff;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-aff { display: flex; flex-direction: column; align-items: center; min-width: 54px; }
+.cv-aff-num { font-weight: bold; font-size: 28px; line-height: 1; color: var(--title-a); font-variant-numeric: tabular-nums; }
+.cv-aff-num.crit { color: var(--cain); }
+.cv-aff-lbl { font-size: 9px; color: var(--text-dim); letter-spacing: .08em; }
+.cv-rankbox { display: flex; flex-direction: column; gap: 1px; }
+.cv-rank { font-weight: bold; font-size: 12px; }
+.cv-req { font-size: 10px; color: var(--text-dim); }
+.cv-ready { font-size: 10px; font-weight: bold; color: #fff; background: var(--good); padding: 1px 4px; width: fit-content; }
+.cv-card.is-broken .cv-ready { background: var(--cain); }
+
+.cv-bondtext { font-size: 11px; color: var(--text-dim); min-height: 26px; margin: 4px 0; padding-top: 4px;
+  border-top: 1px solid var(--gray-d); box-shadow: 0 1px 0 var(--light); }
+
+/* actions */
+.cv-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.cv-act-row { display: flex; flex-direction: column; gap: 4px; }
+.cv-act-lbl { font-size: 10px; color: var(--text-dim); font-weight: bold; }
+.cv-act-lbl em { font-style: normal; color: var(--title-a); }
+.cv-act-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.cv-conv-checks { display: flex; flex-wrap: wrap; gap: 3px 10px; margin: 2px 0; padding: 5px 6px;
+  background: #fff;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; }
+.cv-chk input { appearance: none; width: 13px; height: 13px; margin: 0; background: #fff; cursor: pointer;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd), inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); position: relative; }
+.cv-chk input:checked::after { content: "✔"; position: absolute; inset: -2px 0 0 0; display: grid; place-items: center; font-size: 11px; color: #000; }
+.cv-chk.bad input:checked::after { color: var(--cain); }
+.cv-log { width: fit-content; font-weight: bold; }
+.cv-hate { flex-direction: row; align-items: center; justify-content: space-between; }
+
+/* intel disclosure */
+.cv-intel { margin-top: 6px; }
+.cv-intel summary { font-size: 11px; cursor: pointer; padding: 2px 0; }
+.cv-intel summary::marker { content: ""; }
+.cv-intel summary::before { content: "▸ "; }
+.cv-intel[open] summary::before { content: "▾ "; }
+.cv-intel p { margin: 3px 0; font-size: 10px; color: var(--text-dim); }
+.cv-intel b { color: #000; }
+
+/* footer */
+.cv-foot { display: flex; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--gray-d); box-shadow: 0 -1px 0 var(--light); }
+.cv-btn { min-height: 24px; padding: 4px 12px; }
+.cv-btn-ghost { padding: 3px 10px; min-height: 21px; }
+.cv-btn-warn { flex: 1; font-weight: bold; }
+.cv-btn-danger { color: var(--cain); font-weight: bold; }
+
+/* status bar at the very bottom */
+.cv-statusbar { display: flex; gap: 6px; margin: 6px 2px 2px; }
+.cv-statusbar div { padding: 2px 6px; font-size: 11px; color: var(--text-dim);
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
+.cv-statusbar .grow { flex: 1; }
+
+/* responsive + a11y */
+@media (max-width: 560px) { .cv-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
