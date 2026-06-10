@@ -32,8 +32,20 @@
       <div class="cv-stat">{{mission}}</div>
     </div>
     <div class="cv-field cv-field-sm">
+      <label class="cv-lbl" title="Covert score — feeds the post-mission contraband haul">COVERT</label>
+      <input class="cv-input cv-input-num" name="covert" type="number" min="0" max="9" value="{{covert}}" />
+    </div>
+    <div class="cv-field cv-field-sm">
+      <label class="cv-lbl" title="CAT — half of it (rounded down) feeds the contraband haul">CAT</label>
+      <input class="cv-input cv-input-num" name="cat" type="number" min="0" max="9" value="{{cat}}" />
+    </div>
+    <div class="cv-field cv-field-sm">
       <label class="cv-lbl">HQ STOCK</label>
       <input class="cv-input cv-input-num" name="hqStock" type="number" min="0" max="6" value="{{hqStock}}" />
+    </div>
+    <div class="cv-field cv-field-sm">
+      <label class="cv-lbl" title="Gate users collect +1 contraband per mission">GATE</label>
+      <label class="cv-toggle"><input type="checkbox" name="gateUser" {{#if gateUser}}checked{{/if}} /><span></span></label>
     </div>
     <div class="cv-field cv-field-sm">
       <label class="cv-lbl">X2 MOD</label>
@@ -43,7 +55,9 @@
   </section>
 
   <div class="cv-limits">
-    CONV {{convCap}}/MISSION &nbsp;·&nbsp; CONTRABAND {{contraCap}}/MISSION &nbsp;·&nbsp; BREAK AT AFFINITY −5
+    BONDS {{bondsUsed}}/{{bondsAllowed}} &nbsp;·&nbsp; CONV {{convCap}}/MISSION &nbsp;·&nbsp;
+    CONTRABAND {{contraCap}}/MISSION (STOCK {{hqStock}}/6, NEXT HAUL +{{nextHaul}}) &nbsp;·&nbsp;
+    HEART BREAK AT −5
   </div>
 
   <section class="cv-grid">
@@ -56,7 +70,7 @@
           <span class="cv-vepi">{{epithet}}</span>
         </div>
         <button class="cv-bond-toggle {{#if bonded}}on{{/if}}" data-action="toggleBond" data-virtue="{{key}}">
-          {{#if bonded}}BONDED{{else}}LINK{{/if}}
+          {{#if broken}}BROKEN{{else if bonded}}BONDED{{else}}LINK{{/if}}
         </button>
       </div>
 
@@ -66,9 +80,10 @@
           <span class="cv-aff-lbl">AFFINITY</span>
         </div>
         <div class="cv-rankbox">
-          <span class="cv-rank">BOND {{rank}}</span>
+          <span class="cv-rank" title="{{rankFlavor}}">BOND {{rank}}</span>
           {{#if reqNext}}<span class="cv-req">NEXT @ {{reqNext}}</span>{{else}}<span class="cv-req">MAX</span>{{/if}}
           {{#if (gt qualified rank)}}<span class="cv-ready">RANK-UP READY</span>{{/if}}
+          {{#if broken}}<span class="cv-ready">💔 RESETS AT MISSION CLOSE</span>{{/if}}
         </div>
       </div>
 
@@ -95,11 +110,34 @@
             <button class="cv-mini bad" data-action="contra" data-virtue="{{key}}" data-kind="dislike" title="A dislike (−3)">DISLIKE −3</button>
           </div>
         </div>
+        {{#if quirks.length}}
+        <details class="cv-intel cv-quirkbox">
+          <summary>QUIRKS</summary>
+          <div class="cv-act-btns cv-quirklist">
+            {{#each quirks}}
+            <button class="cv-mini {{#if good}}good{{else}}bad{{/if}}" data-action="quirk"
+                    data-virtue="{{../key}}" data-q="{{index}}"
+                    title="{{#if perMission}}{{used}}/{{perMission}} this mission{{/if}}">
+              {{label}} ({{deltaStr}}){{#if perMission}} [{{used}}/{{perMission}}]{{/if}}
+            </button>
+            {{/each}}
+          </div>
+        </details>
+        {{/if}}
+        {{#if ../isGM}}
+        <div class="cv-act-row cv-adjrow">
+          <span class="cv-act-lbl">ADMIN ADJUST</span>
+          <div class="cv-act-btns">
+            <input class="cv-input cv-input-num" name="adj-{{key}}" type="number" value="0" />
+            <button class="cv-mini" data-action="adjust" data-virtue="{{key}}">APPLY ±</button>
+          </div>
+        </div>
+        {{/if}}
       </div>
       {{else}}
       <div class="cv-act-row cv-hate">
         <span class="cv-act-lbl">NO LINK</span>
-        <button class="cv-mini bad" data-action="contra" data-virtue="{{key}}" data-kind="hatemail" title="Hate-mail to an unbonded virtue (down only)">HATE-MAIL</button>
+        <button class="cv-mini bad" data-action="contra" data-virtue="{{key}}" data-kind="hatemail" title="Hate-mail to an unbonded virtue (down only, spends 1 stock)">HATE-MAIL</button>
       </div>
       {{/if}}
 
@@ -107,15 +145,27 @@
         <summary>INTEL</summary>
         <p><b>LIKES</b> {{#each likes}}{{this}}{{#unless @last}} · {{/unless}}{{/each}}</p>
         <p><b>DISLIKES</b> {{#each dislikes}}{{this}}{{#unless @last}} · {{/unless}}{{/each}}</p>
-        <p><b>FOOD</b> {{#each food}}{{this}}{{#unless @last}} · {{/unless}}{{/each}}</p>
+        <p><b>FOOD</b> {{#if food.length}}{{#each food}}{{this}}{{#unless @last}} · {{/unless}}{{/each}}{{else}}—{{/if}}</p>
         <p><b>HIGH BLASPHEMY</b> {{blasphemy}}</p>
       </details>
     </article>
     {{/each}}
   </section>
 
+  {{#if log.length}}
+  <details class="cv-intel cv-eventlog">
+    <summary>EVENT LOG</summary>
+    <ul class="cv-loglist">
+      {{#each log}}<li>{{this}}</li>{{/each}}
+    </ul>
+  </details>
+  {{/if}}
+
   <footer class="cv-foot">
     <button class="cv-btn cv-btn-warn" data-action="endMission">CLOSE MISSION ▸ APPLY RANK-UPS</button>
+    {{#if x2mod}}
+    <button class="cv-btn" data-action="timeOff" title="X2 mod: rank-ups + limit reset + 1 extra bond slot, without closing the mission">TIME OFF</button>
+    {{/if}}
     <button class="cv-btn cv-btn-danger" data-action="reset">WIPE DOSSIER</button>
   </footer>
   </div>
@@ -123,7 +173,7 @@
   <div class="cv-statusbar">
     <div class="grow">Ready</div>
     <div>MISSION {{mission}}</div>
-    <div>CONV {{convCap}}/MISS</div>
-    <div>CONTRA {{contraCap}}/MISS</div>
+    <div>BONDS {{bondsUsed}}/{{bondsAllowed}}</div>
+    <div>STOCK {{hqStock}}/6</div>
   </div>
 </div>
