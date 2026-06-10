@@ -6,11 +6,25 @@ Contraband on themselves; affinity, bond rank and broken-bond logic resolve auto
 State persists via flags on each User document (Foundry's native database — no SQLite needed).
 
 ## Install
-1. Copy the `cain-cardinal-virtuoso` folder into `Data/modules/` of your Foundry install
-   (or zip it and use *Install Module → Manifest/Local*).
-2. Enable it in your world (**Game Settings → Manage Modules**).
-3. Open via the **Cardinal Virtuoso** button in the Token scene-controls,
+**Via manifest URL (recommended):** in Foundry, go to *Add-on Modules → Install Module* and paste:
+```
+https://github.com/Felipe-Alves-VNGX/CAIN-cardinal-virtuoso/releases/latest/download/module.json
+```
+Updates are picked up automatically when a new release is published.
+
+**Manually:** download `module.zip` from the [latest release](https://github.com/Felipe-Alves-VNGX/CAIN-cardinal-virtuoso/releases/latest)
+and extract it into `Data/modules/cain-cardinal-virtuoso/`, or copy this folder there directly.
+
+Then:
+1. Enable it in your world (**Game Settings → Manage Modules**).
+2. Open via the **Cardinal Virtuoso** button in the Token scene-controls,
    or run the macro: `game.cainCardinalVirtuoso.open()`.
+
+## Releases
+Publishing is automated: merging to `main` with a changed `version` in `module.json`
+creates a GitHub release with `module.zip` and a stamped `module.json` attached
+(see `.github/workflows/release.yml`). Bump the version and update `CHANGELOG.md`
+in the same PR; merges without a version bump don't release.
 
 ## Who sees what (isolation)
 - A **player** opening the tracker sees and edits **only their own** dossier.
