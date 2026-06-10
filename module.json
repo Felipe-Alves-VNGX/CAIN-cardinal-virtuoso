@@ -2,7 +2,7 @@
   "id": "cain-cardinal-virtuoso",
   "title": "CAIN — Cardinal Virtuoso (Affinity Tracker)",
   "description": "Fan-made SEER + TEMERITY affinity/bond tracker for CAIN. Per-player isolated dossiers with a Warframe-1999 CRT aesthetic. Players log Conversation and Contraband; affinity, bond rank and broken-bond logic resolve automatically. Persists via document flags.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "compatibility": { "minimum": "11", "verified": "13", "maximum": "14" },
   "authors": [{ "name": "Felipe (Admin)" }],
   "esmodules": ["scripts/cardinal-virtuoso.mjs"],
