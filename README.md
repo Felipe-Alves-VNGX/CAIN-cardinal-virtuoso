@@ -3,7 +3,7 @@
 Fan-made **SEER + TEMERITY** affinity/bond tracker for the CAIN TTRPG, as a Foundry VTT module.
 Per-player isolated dossiers, Warframe-1999 CRT aesthetic. Players log Conversation and
 Contraband on themselves; affinity, bond rank and broken-bond logic resolve automatically.
-State persists via flags on each User document (Foundry's native database — no SQLite needed).
+State persists via flags on each User document.
 
 ## Install
 **Via manifest URL (recommended):** in Foundry, go to *Add-on Modules → Install Module* and paste:
