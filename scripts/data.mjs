@@ -3,9 +3,11 @@
 // quirks: per-virtue affinity triggers. perMission caps how often one can fire per mission.
 // bondReactions: delta applied to THIS virtue when the player bonds/upgrades the KEYED virtue
 //   ("*" = any other virtue).
+// portrait: path to a portrait image, relative to the module root (e.g. "img/virtues/justice.webp").
+//   Leave empty to show the glyph letter placeholder. Drop images in img/virtues/ for Phase 3.
 export const VIRTUES = {
   justice: {
-    name: "Justice", epithet: "The Executioner", glyph: "I",
+    name: "Justice", epithet: "The Executioner", glyph: "I", portrait: "",
     likes: ["Religious Debate", "Classical Music", "Cleanliness"],
     dislikes: ["Charity", "Tardiness", "Dogs"],
     food: ["Health Food", "Dates"],
@@ -25,7 +27,7 @@ export const VIRTUES = {
     bondReactions: { charity: -10 }
   },
   faith: {
-    name: "Faith", epithet: "The Timid", glyph: "II",
+    name: "Faith", epithet: "The Timid", glyph: "II", portrait: "",
     likes: ["Dogs", "Slow Afternoons", "Taking Photos", "Gachapon", "Phone Games", "Fighting Games"],
     dislikes: ["Fortitude", "Rude people", "Work", "Horror Movies"],
     food: ["Fast Food", "Sweets", "Hot Chicken"],
@@ -46,7 +48,7 @@ export const VIRTUES = {
     bondReactions: { fortitude: -10 }
   },
   charity: {
-    name: "Charity", epithet: "The Twins", glyph: "III",
+    name: "Charity", epithet: "The Twins", glyph: "III", portrait: "",
     likes: ["Fashion", "Arguing online", "Travel", "Rainy days"],
     dislikes: ["Justice", "Faith", "Boring people", "Long conversations"],
     food: ["High tea", "Pork dumplings"],
@@ -68,7 +70,7 @@ export const VIRTUES = {
     bondReactions: { justice: -10, faith: -10 }
   },
   fortitude: {
-    name: "Fortitude", epithet: "The Disaster", glyph: "IV",
+    name: "Fortitude", epithet: "The Disaster", glyph: "IV", portrait: "",
     likes: ["Fighting", "Strong Opponents"],
     dislikes: ["Humans", "Exorcists", "All other virtues", "Sins", "CAIN leadership"],
     food: ["Hot Dogs (per CASTLE addendum 3004: nutrient paste only)"],
@@ -92,7 +94,7 @@ export const VIRTUES = {
     bondReactions: { "*": -10 }
   },
   hope: {
-    name: "Hope", epithet: "The Dreamer", glyph: "V",
+    name: "Hope", epithet: "The Dreamer", glyph: "V", portrait: "",
     likes: ["Video Games", "Luxurious Baths", "Holidays"],
     dislikes: ["Loud Noises", "Nosy people", "Justice", "Fortitude"],
     food: ["Pre-packed meal 402A"],
@@ -113,7 +115,7 @@ export const VIRTUES = {
     bondReactions: { justice: -10, fortitude: -10 }
   },
   prudence: {
-    name: "Prudence", epithet: "The Negotiator", glyph: "VI",
+    name: "Prudence", epithet: "The Negotiator", glyph: "VI", portrait: "",
     likes: ["Neat Whiskey", "Romance Novels", "Trains", "Long walks"],
     dislikes: ["Charity", "Justice", "Explaining things to slow people"],
     food: ["Nuts"],
@@ -133,7 +135,7 @@ export const VIRTUES = {
     bondReactions: { charity: -10, justice: -10 }
   },
   chastity: {
-    name: "Chastity", epithet: "The Restraint", glyph: "VII",
+    name: "Chastity", epithet: "The Restraint", glyph: "VII", portrait: "",
     likes: ["Phone Calls", "Online Games", "Horror Movies", "Faith"],
     dislikes: ["Charity", "Velvet", "Parties", "Skin Contact"],
     food: ["White Rice", "Potato Chips"],
@@ -154,7 +156,7 @@ export const VIRTUES = {
     bondReactions: { faith: 3, charity: -10 }
   },
   sobriety: {
-    name: "Sobriety", epithet: "The Resolute", glyph: "VIII",
+    name: "Sobriety", epithet: "The Resolute", glyph: "VIII", portrait: "",
     likes: ["Alcohol", "Recreational Drugs", "Film Noir", "Prudence"],
     dislikes: ["CAIN Orbital Lasers", "Carpet Bombing", "Staying Sober", "Pain", "Losing Bets", "Faith"],
     food: ["Rare Steak"],
@@ -177,7 +179,7 @@ export const VIRTUES = {
     bondReactions: { prudence: 3, faith: -10 }
   },
   absolution: {
-    name: "Absolution", epithet: "The Mourner", glyph: "IX",
+    name: "Absolution", epithet: "The Mourner", glyph: "IX", portrait: "",
     likes: ["Guillotine", "Firearm Discipline", "Small Talk", "Photography", "Death Metal"],
     dislikes: ["Non-committal relationships", "Hope", "Justice", "Thunderstorms"],
     food: [],

@@ -262,8 +262,10 @@ function buildContext(user, isGM) {
   const d = getDossier(user);
   const virtues = Object.entries(VIRTUES).map(([key, v]) => {
     const slot = d.virtues[key];
+    const portraitPath = v.portrait ? `modules/${MOD}/${v.portrait}` : "";
     return {
       key, ...v,
+      portrait: portraitPath,
       ...slot,
       reqNext: slot.rank < 3 ? rankRequirement(slot, slot.rank + 1) : null,
       qualified: qualifiedRank(slot),
@@ -510,9 +512,9 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   parseRankReq(game.settings.get(MOD, "rankReq"));
-  game.cainCardinalVirtuoso = {
-    open: (userId) => new CardinalApp({ targetUserId: userId ?? game.user.id }).render(true)
-  };
+  game.cainCardinalVirtuoso ??= {};
+  game.cainCardinalVirtuoso.open = (userId) =>
+    new CardinalApp({ targetUserId: userId ?? game.user.id }).render(true);
   console.log(`${MOD} | ready`);
 });
 
@@ -521,8 +523,8 @@ Hooks.on("getSceneControlButtons", (controls) => {
   const tool = {
     name: "cardinal-virtuoso", title: "Cardinal Virtuoso", icon: "fa-solid fa-cross",
     button: true, visible: true,
-    onClick: () => game.cainCardinalVirtuoso.open(),
-    onChange: () => game.cainCardinalVirtuoso.open()
+    onClick: () => (game.cainCardinalVirtuoso.openDesktop ?? game.cainCardinalVirtuoso.open)(),
+    onChange: () => (game.cainCardinalVirtuoso.openDesktop ?? game.cainCardinalVirtuoso.open)()
   };
   // v13+ controls is an object keyed by name; older is an array
   if (Array.isArray(controls)) {

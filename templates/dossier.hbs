@@ -64,7 +64,11 @@
     {{#each virtues}}
     <article class="cv-card {{#if bonded}}is-bonded{{/if}} {{#if broken}}is-broken{{/if}}">
       <div class="cv-card-head">
+        {{#if portrait}}
+        <img class="cv-portrait" src="{{portrait}}" alt="{{name}}" />
+        {{else}}
         <span class="cv-glyph">{{glyph}}</span>
+        {{/if}}
         <div class="cv-card-id">
           <span class="cv-vname">{{name}}</span>
           <span class="cv-vepi">{{epithet}}</span>
