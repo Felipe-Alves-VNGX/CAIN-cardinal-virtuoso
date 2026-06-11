@@ -123,6 +123,8 @@
   box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light);
 }
 .cv-card.is-broken .cv-glyph { background: var(--cain); }
+.cv-portrait { width: 26px; height: 26px; object-fit: cover; display: block;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light); }
 .cv-card-id { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.15; }
 .cv-vname { font-weight: bold; font-size: 13px; }
 .cv-vepi { font-size: 10px; color: var(--text-dim); }
@@ -223,3 +225,201 @@
 /* responsive + a11y */
 @media (max-width: 560px) { .cv-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+/* ============================================================
+   PHASE 2 — SEER//TEMERITY OS SHELL (Höllvania '99 Desktop)
+   ============================================================ */
+
+.cv-desktop-shell .window-content { padding: 0; overflow: hidden; background: transparent; }
+
+.cv-os-root {
+  display: flex; flex-direction: column;
+  height: 100%; overflow: hidden; position: relative;
+}
+
+/* ── Desktop area ─────────────────────────────────────────── */
+.cv-desktop {
+  flex: 1; position: relative; overflow: hidden;
+  background:
+    radial-gradient(ellipse at 22% 12%, rgba(75,0,110,0.55) 0%, transparent 42%),
+    radial-gradient(ellipse at 78% 88%, rgba(120,20,0,0.45) 0%, transparent 42%),
+    radial-gradient(ellipse at 55% 55%, rgba(18,0,36,0.75) 0%, transparent 70%),
+    linear-gradient(170deg, #08000f 0%, #0b0009 45%, #14000a 75%, #09000b 100%);
+}
+
+/* scanlines */
+.cv-desktop::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: repeating-linear-gradient(
+    transparent 0px, transparent 1px,
+    rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px
+  );
+}
+
+/* horizon glow */
+.cv-desktop::after {
+  content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 90px;
+  z-index: 0;
+  background: linear-gradient(transparent 0%, rgba(60,0,20,0.6) 60%, rgba(5,0,2,0.95) 100%);
+  border-top: 1px solid rgba(120,0,60,0.25);
+}
+
+/* ── Desktop icons ────────────────────────────────────────── */
+.cv-desktop-icons {
+  position: absolute; top: 16px; left: 16px; z-index: 2;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.cv-desk-icon {
+  display: flex; flex-direction: column; align-items: center;
+  width: 66px; cursor: default; user-select: none; gap: 4px;
+}
+
+.cv-desk-icon-face {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  font-size: 17px; font-weight: bold; color: #fff;
+  background: rgba(0,0,140,0.75);
+  box-shadow: inset -1px -1px 0 rgba(0,0,0,0.9), inset 1px 1px 0 rgba(255,255,255,0.55),
+              inset -2px -2px 0 rgba(0,0,80,0.7), inset 2px 2px 0 rgba(100,100,200,0.4);
+}
+.cv-desk-icon-sm { font-size: 10px; letter-spacing: .04em; }
+
+.cv-desk-icon-lbl {
+  font-family: var(--sys); font-size: 10px; color: #e8e8e8;
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 4px #000;
+  text-align: center; line-height: 1.25; padding: 1px 3px;
+}
+
+.cv-desk-icon:hover .cv-desk-icon-lbl,
+.cv-desk-icon:focus-within .cv-desk-icon-lbl { background: var(--title-a); color: #fff; }
+.cv-desk-icon:active .cv-desk-icon-face {
+  box-shadow: inset 1px 1px 0 rgba(0,0,0,0.9), inset -1px -1px 0 rgba(255,255,255,0.4);
+}
+
+/* ── Taskbar ──────────────────────────────────────────────── */
+.cv-taskbar {
+  height: 28px; flex-shrink: 0; position: relative; z-index: 10;
+  background: var(--gray);
+  display: flex; align-items: center; gap: 3px; padding: 2px 3px;
+  border-top: 1px solid var(--light);
+  box-shadow: 0 -1px 0 var(--gray-dd);
+}
+
+.cv-start-btn {
+  height: 22px; padding: 1px 8px; min-width: 54px;
+  font-family: var(--sys); font-size: 12px; font-weight: bold; color: #000;
+  background: var(--gray); border: 0; cursor: pointer;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light),
+              inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face);
+  display: flex; align-items: center; gap: 4px;
+}
+.cv-start-btn:active {
+  box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light),
+              inset 2px 2px 0 var(--gray-d);
+  padding: 2px 7px 0 9px;
+}
+.cv-start-btn:focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
+
+.cv-task-open { flex: 1; display: flex; gap: 3px; align-items: center; }
+
+.cv-task-btn {
+  height: 20px; padding: 1px 8px; font-family: var(--sys); font-size: 11px;
+  background: var(--gray); border: 0; cursor: pointer; color: #000;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light),
+              inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face);
+}
+.cv-task-btn.cv-task-active {
+  box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light),
+              inset 2px 2px 0 var(--gray-d);
+}
+
+.cv-tray {
+  display: flex; align-items: center; padding: 1px 7px; height: 22px;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d);
+}
+.cv-clock { font-size: 11px; font-family: var(--sys); color: #000; }
+
+/* ── Start menu ──────────────────────────────────────────── */
+.cv-start-menu {
+  position: absolute; bottom: 28px; left: 3px; z-index: 100;
+  display: flex; min-width: 180px;
+  box-shadow: 2px -2px 0 var(--gray-dd), -1px 0 0 var(--gray-d),
+              inset 0 0 0 1px var(--light);
+}
+
+.cv-start-brand {
+  width: 22px; min-height: 100px; writing-mode: vertical-lr;
+  transform: rotate(180deg); user-select: none;
+  background: linear-gradient(180deg, var(--title-b) 0%, var(--title-a) 100%);
+  display: flex; align-items: flex-end; justify-content: flex-start;
+  padding: 6px 3px; gap: 2px;
+  font-family: var(--sys); font-weight: bold;
+  color: rgba(255,255,255,0.35); font-size: 9px; letter-spacing: 0.08em;
+}
+.cv-start-brand small { font-size: 8px; opacity: 0.5; }
+
+.cv-start-list {
+  flex: 1; list-style: none; margin: 0; padding: 2px 0;
+  background: var(--gray);
+}
+
+.cv-start-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 14px 5px 8px; font-family: var(--sys); font-size: 12px;
+  cursor: default; white-space: nowrap;
+}
+.cv-start-item:hover { background: var(--title-a); color: #fff; }
+.cv-start-ico { width: 16px; text-align: center; font-size: 13px; }
+.cv-start-sep { height: 1px; background: var(--gray-d); margin: 2px 4px; box-shadow: 0 1px 0 var(--light); }
+.cv-start-shut:hover { background: var(--cain); color: #fff; }
+
+/* ── Boot screen ─────────────────────────────────────────── */
+.cv-boot {
+  position: absolute; inset: 0; z-index: 200;
+  background: #000; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+.cv-boot-inner {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px; color: #999; line-height: 1.7;
+  max-width: 620px; padding: 24px 20px;
+}
+
+.cv-boot-logo {
+  font-size: 24px; font-weight: bold; color: #fff;
+  letter-spacing: 0.2em; display: block; margin-bottom: 2px;
+}
+.cv-boot-tagline { font-size: 11px; color: #555; margin-bottom: 12px; display: block; }
+
+.cv-boot-rule { color: #2a2a2a; }
+
+.cv-boot-line, .cv-boot-rule {
+  opacity: 0; animation: cv-bl-in 0.06s forwards;
+}
+.cv-boot-line b { color: #66dd66; }
+.cv-boot-warn span { color: #ddcc44; }
+.cv-bd { color: #333; }
+
+.cv-bl-1  { animation-delay: 0.20s; }
+.cv-bl-2  { animation-delay: 0.45s; }
+.cv-bl-3  { animation-delay: 0.75s; }
+.cv-bl-4  { animation-delay: 1.00s; }
+.cv-bl-5  { animation-delay: 1.25s; }
+.cv-bl-6  { animation-delay: 1.50s; }
+.cv-bl-7  { animation-delay: 1.80s; }
+.cv-bl-8  { animation-delay: 2.20s; }
+.cv-bl-9  { animation-delay: 2.40s; }
+.cv-bl-10 { animation-delay: 2.70s; }
+
+@keyframes cv-bl-in { from { opacity: 0; } to { opacity: 1; } }
+
+.cv-boot-prompt { color: #bbb; margin-top: 8px; }
+
+/* blinking cursor on ESTABLISHING line */
+.cv-blink { animation: cv-blink 1s step-start 1.8s infinite; color: #ddcc44; }
+@keyframes cv-blink { 50% { opacity: 0; } }
+
+/* dismiss animation */
+@keyframes cv-boot-fade { to { opacity: 0; pointer-events: none; } }
+.cv-boot-fade { animation: cv-boot-fade 0.45s ease-out forwards; }

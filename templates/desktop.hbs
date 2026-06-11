@@ -1,0 +1,63 @@
+<div class="cv-os-root cv-root">
+
+  {{!-- ── BOOT SCREEN ──────────────────────────────────────── --}}
+  {{#unless booted}}
+  <div class="cv-boot" data-action="bootDismiss">
+    <div class="cv-boot-inner">
+      <div class="cv-boot-logo">SEER // TEMERITY</div>
+      <div class="cv-boot-tagline">CARDINAL VIRTUOSO v{{version}} — HÖLLVANIA TERMINAL</div>
+      <div class="cv-boot-rule cv-bl-1">══════════════════════════════════════════════════════</div>
+      <div class="cv-boot-line cv-bl-2">Virtue matrix<span class="cv-bd">.....................</span><b>OK — 9 operatives found</b></div>
+      <div class="cv-boot-line cv-bl-3">Affinity engine<span class="cv-bd">...................</span><b>ONLINE</b></div>
+      <div class="cv-boot-line cv-bl-4">Bond tracking<span class="cv-bd">.....................</span><b>ACTIVE</b></div>
+      <div class="cv-boot-line cv-bl-5">HQ contraband manifest<span class="cv-bd">.............</span><b>INITIALIZED</b></div>
+      <div class="cv-boot-line cv-bl-6">Mission log<span class="cv-bd">.........................</span><b>READY</b></div>
+      <div class="cv-boot-line cv-bl-7 cv-boot-warn">CAIN command link<span class="cv-bd">...................</span><span class="cv-blink">ESTABLISHING...</span></div>
+      <div class="cv-boot-line cv-bl-8">CAIN command link<span class="cv-bd">...................</span><b>CONNECTED</b></div>
+      <div class="cv-boot-rule cv-bl-9">──────────────────────────────────────────────────────</div>
+      <div class="cv-boot-line cv-boot-prompt cv-bl-10">SYSTEM READY — click anywhere to continue ▮</div>
+    </div>
+  </div>
+  {{/unless}}
+
+  {{!-- ── DESKTOP AREA ────────────────────────────────────── --}}
+  <div class="cv-desktop">
+    <div class="cv-desktop-icons">
+      <div class="cv-desk-icon" data-action="openDossier">
+        <div class="cv-desk-icon-face">✝</div>
+        <span class="cv-desk-icon-lbl">DOSSIER.EXE</span>
+      </div>
+      <div class="cv-desk-icon" data-action="openAbout">
+        <div class="cv-desk-icon-face cv-desk-icon-sm">NFO</div>
+        <span class="cv-desk-icon-lbl">SEER.NFO</span>
+      </div>
+    </div>
+  </div>
+
+  {{!-- ── TASKBAR ─────────────────────────────────────────── --}}
+  <div class="cv-taskbar">
+    <button class="cv-start-btn" data-action="toggleStart"><b>⊞</b>&thinsp;Start</button>
+    <div class="cv-task-open" id="cv-task-open"></div>
+    <div class="cv-tray">
+      <span class="cv-clock">{{clock}}</span>
+    </div>
+  </div>
+
+  {{!-- ── START MENU ──────────────────────────────────────── --}}
+  <div class="cv-start-menu cv-raised" hidden>
+    <div class="cv-start-brand"><span>SEER</span><small>//TEMERITY</small></div>
+    <ul class="cv-start-list">
+      <li class="cv-start-item" data-action="openDossier">
+        <span class="cv-start-ico">✝</span>DOSSIER.EXE
+      </li>
+      <li class="cv-start-item" data-action="openAbout">
+        <span class="cv-start-ico">i</span>SEER.NFO
+      </li>
+      <li class="cv-start-sep"></li>
+      <li class="cv-start-item cv-start-shut" data-action="shutDown">
+        <span class="cv-start-ico">⏻</span>Shut Down
+      </li>
+    </ul>
+  </div>
+
+</div>
