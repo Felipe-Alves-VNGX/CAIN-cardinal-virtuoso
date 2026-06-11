@@ -536,4 +536,4 @@ Hooks.on("getSceneControlButtons", (controls) => {
   }
 });
 
-export { CardinalApp };
+export { CardinalApp, buildContext, ACTIONS };

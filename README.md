@@ -17,8 +17,14 @@ and extract it into `Data/modules/cain-cardinal-virtuoso/`, or copy this folder 
 
 Then:
 1. Enable it in your world (**Game Settings → Manage Modules**).
-2. Open via the **Cardinal Virtuoso** button in the Token scene-controls,
-   or run the macro: `game.cainCardinalVirtuoso.open()`.
+2. Click the **Cardinal Virtuoso** button in the Token scene-controls — it opens
+   the *SEER//TEMERITY Höllvania '99 terminal* (boot screen → desktop). Launch
+   **DOSSIER.EXE** from the desktop icon or Start menu; it runs as a draggable
+   window inside the terminal, with working minimize/maximize/close and a
+   taskbar button.
+3. Macros: `game.cainCardinalVirtuoso.openDesktop()` opens the terminal;
+   `game.cainCardinalVirtuoso.open()` opens the tracker directly as a plain
+   Foundry window (no shell).
 
 ## Releases
 Publishing is automated: merging to `main` with a changed `version` in `module.json`

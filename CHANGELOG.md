@@ -5,11 +5,15 @@
   — a Win95-style desktop with wallpaper, icons and a taskbar.
 - **Boot sequence**: animated terminal log plays on first open (click to skip).
   Lines reveal one by one; CAIN link blinks amber until connected.
-- **DOSSIER.EXE icon**: double-click on the desktop (or Start menu) opens the
-  affinity tracker as before. `game.cainCardinalVirtuoso.open()` still works for macros.
+- **DOSSIER.EXE runs inside the desktop**: the tracker now opens as a draggable
+  internal Win95 window within the terminal — its titlebar buttons (_ □ ✕)
+  minimize to the taskbar, maximize and close for real. One instance at a time;
+  reopening restores/focuses it. `game.cainCardinalVirtuoso.open()` still opens
+  the standalone Foundry window for macros.
 - **Start menu**: classic Win95 popup with SEER//TEMERITY side-banner.
   Contains DOSSIER.EXE, SEER.NFO (about dialog) and Shut Down.
-- **Taskbar**: Start button, open-window tray, live clock (updates every 15s).
+- **Taskbar**: Start button, open-window buttons (click to minimize/restore
+  DOSSIER.EXE), live clock (updates every 15s).
 - **Singleton desktop**: opening via scene button while the terminal is already
   open brings it to front instead of spawning a second window.
 - Portrait image infrastructure prepared: each virtue has a `portrait` slot

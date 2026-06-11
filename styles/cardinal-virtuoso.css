@@ -423,3 +423,22 @@
 /* dismiss animation */
 @keyframes cv-boot-fade { to { opacity: 0; pointer-events: none; } }
 .cv-boot-fade { animation: cv-boot-fade 0.45s ease-out forwards; }
+
+/* ── Internal windows (DOSSIER.EXE inside the desktop) ────── */
+.cv-iwin {
+  position: absolute; z-index: 5;
+  min-width: 380px; min-height: 220px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.6), 6px 8px 18px rgba(0,0,0,0.55);
+}
+.cv-iwin .cv-root {
+  display: flex; flex-direction: column;
+  width: 100%; height: 100%;
+}
+.cv-iwin .cv-titlebar { cursor: move; flex-shrink: 0; touch-action: none; }
+.cv-iwin .cv-menubar  { flex-shrink: 0; }
+.cv-iwin .cv-body     { flex: 1; min-height: 0; overflow-y: auto; }
+.cv-iwin .cv-statusbar{ flex-shrink: 0; }
+.cv-iwin .cv-tbtn     { cursor: pointer; }
+.cv-iwin .cv-tbtn:active {
+  box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light);
+}

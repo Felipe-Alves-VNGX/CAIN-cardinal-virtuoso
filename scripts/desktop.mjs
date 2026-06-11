@@ -1,4 +1,4 @@
-import { CardinalApp } from "./cardinal-virtuoso.mjs";
+import { CardinalApp, buildContext, ACTIONS } from "./cardinal-virtuoso.mjs";
 
 const MOD    = "cain-cardinal-virtuoso";
 const AppV2  = foundry.applications?.api?.ApplicationV2;
@@ -8,9 +8,15 @@ function clockStr() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function renderTpl(path, data) {
+  const fn = foundry.applications?.handlebars?.renderTemplate ?? globalThis.renderTemplate;
+  return fn(path, data);
+}
+
 /* ── shared instance methods (mixed into both class variants) ── */
 const _deskMethods = {
   _rootEl() { return this.element?.[0] ?? this.element; },
+  _desk()   { return this._rootEl()?.querySelector(".cv-desktop"); },
 
   _dismissBoot() {
     if (this._booted) return;
@@ -52,14 +58,145 @@ const _deskMethods = {
       const el = this._rootEl()?.querySelector(".cv-clock");
       if (el) el.textContent = clockStr();
     }, 15000);
+  },
+
+  /* ── internal window manager (DOSSIER.EXE runs inside the desktop) ── */
+  _zTop() { this._z = (this._z ?? 10) + 1; return String(this._z); },
+
+  async _openDossierWin() {
+    this._closeStart();
+    if (this._dossierWin) {
+      this._restoreWin(this._dossierWin);
+      this._dossierWin.el.style.zIndex = this._zTop();
+      return;
+    }
+    const desk = this._desk();
+    if (!desk) return;
+    const dw = desk.clientWidth, dh = desk.clientHeight;
+    const w = Math.min(720, dw - 16), h = Math.min(600, dh - 12);
+    const el = document.createElement("div");
+    el.className = "cv-iwin";
+    el.style.left = Math.max(8, Math.round((dw - w) / 2)) + "px";
+    el.style.top = Math.max(4, Math.round((dh - h) / 3)) + "px";
+    el.style.width = w + "px";
+    el.style.height = h + "px";
+    el.style.zIndex = this._zTop();
+    desk.appendChild(el);
+    const win = { id: "dossier", title: "DOSSIER.EXE", el, targetUserId: game.user.id, minimized: false, maxRect: null };
+    this._dossierWin = win;
+    el.addEventListener("pointerdown", () => { el.style.zIndex = this._zTop(); });
+    await this._renderDossier(win);
+    this._refreshTaskbar();
+  },
+
+  async _renderDossier(win) {
+    const user = game.users.get(win.targetUserId) ?? game.user;
+    const ctx = buildContext(user, game.user.isGM);
+    if (game.user.isGM) {
+      ctx.allUsers = game.users.filter(u => !u.isGM).map(u => ({
+        id: u.id, name: u.name, active: u.active, selected: u.id === win.targetUserId
+      }));
+    }
+    win.el.innerHTML = await renderTpl(`modules/${MOD}/templates/dossier.hbs`, ctx);
+    this._wireDossier(win);
+  },
+
+  _wireDossier(win) {
+    const self = this;
+    // adapter so the dossier action handlers (which expect a CardinalApp-like
+    // `this`) work against the internal window instead of a Foundry app
+    const adapter = {
+      get targetUserId() { return win.targetUserId; },
+      set targetUserId(v) { win.targetUserId = v; },
+      get targetUser() { return game.users.get(win.targetUserId) ?? game.user; },
+      get element() { return win.el; },
+      render: () => self._renderDossier(win)
+    };
+    const map = ACTIONS();
+    win.el.querySelectorAll("[data-action]").forEach(el => {
+      const evt = el.tagName === "SELECT" ? "change" : "click";
+      el.addEventListener(evt, ev => map[el.dataset.action]?.call(adapter, ev, el));
+    });
+
+    win.el.querySelector('[data-w="min"]')?.addEventListener("click", () => this._minimizeWin(win));
+    win.el.querySelector('[data-w="max"]')?.addEventListener("click", () => this._maximizeWin(win));
+    win.el.querySelector('[data-w="close"]')?.addEventListener("click", () => this._closeWin(win));
+
+    const tb = win.el.querySelector(".cv-titlebar");
+    tb?.addEventListener("pointerdown", (ev) => {
+      if (ev.target.closest(".cv-tbtn") || win.maxRect) return;
+      ev.preventDefault();
+      const desk = this._desk();
+      const dr = desk.getBoundingClientRect();
+      const wr = win.el.getBoundingClientRect();
+      const ox = ev.clientX - wr.left, oy = ev.clientY - wr.top;
+      const move = (e) => {
+        let x = e.clientX - dr.left - ox;
+        let y = e.clientY - dr.top - oy;
+        x = Math.max(60 - wr.width, Math.min(x, dr.width - 60));
+        y = Math.max(0, Math.min(y, dr.height - 30));
+        win.el.style.left = x + "px";
+        win.el.style.top = y + "px";
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  },
+
+  _minimizeWin(win) {
+    win.minimized = true;
+    win.el.style.display = "none";
+    this._refreshTaskbar();
+  },
+
+  _restoreWin(win) {
+    win.minimized = false;
+    win.el.style.display = "";
+    win.el.style.zIndex = this._zTop();
+    this._refreshTaskbar();
+  },
+
+  _maximizeWin(win) {
+    if (win.maxRect) {
+      Object.assign(win.el.style, win.maxRect);
+      win.maxRect = null;
+    } else {
+      win.maxRect = {
+        left: win.el.style.left, top: win.el.style.top,
+        width: win.el.style.width, height: win.el.style.height
+      };
+      Object.assign(win.el.style, { left: "0px", top: "0px", width: "100%", height: "100%" });
+    }
+  },
+
+  _closeWin(win) {
+    win.el.remove();
+    if (this._dossierWin === win) this._dossierWin = null;
+    this._refreshTaskbar();
+  },
+
+  _refreshTaskbar() {
+    const tray = this._rootEl()?.querySelector(".cv-task-open");
+    if (!tray) return;
+    tray.innerHTML = "";
+    for (const win of [this._dossierWin].filter(Boolean)) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "cv-task-btn" + (win.minimized ? "" : " cv-task-active");
+      b.textContent = `✝ ${win.title}`;
+      b.addEventListener("click", () =>
+        win.minimized ? this._restoreWin(win) : this._minimizeWin(win));
+      tray.appendChild(b);
+    }
   }
 };
 
 /* ── action handlers ── */
-function desk_openDossier() {
-  new CardinalApp({ targetUserId: game.user.id }).render(true);
-  this._closeStart();
-}
+function desk_openDossier() { this._openDossierWin(); }
 
 function desk_openAbout() {
   this._closeStart();
@@ -101,7 +238,7 @@ if (AppV2 && HbsMix) {
         resizable: true,
         icon: "fa-solid fa-desktop"
       },
-      position: { width: 920, height: 680 },
+      position: { width: 960, height: 720 },
       actions: DESK_ACTIONS()
     };
     static PARTS = {
@@ -113,6 +250,7 @@ if (AppV2 && HbsMix) {
       this._booted = false;
       this._startOpen = false;
       this._clockTimer = null;
+      this._dossierWin = null;
     }
 
     async _prepareContext() {
@@ -131,6 +269,7 @@ if (AppV2 && HbsMix) {
 
     async close(opts) {
       clearInterval(this._clockTimer);
+      this._dossierWin = null;
       return super.close(opts);
     }
   };
@@ -145,7 +284,7 @@ if (AppV2 && HbsMix) {
         classes: ["cv-desktop-shell"],
         title: "SEER//TEMERITY — Höllvania '99",
         template: `modules/${MOD}/templates/desktop.hbs`,
-        width: 920, height: 680, resizable: true
+        width: 960, height: 720, resizable: true
       });
     }
 
@@ -154,6 +293,7 @@ if (AppV2 && HbsMix) {
       this._booted = false;
       this._startOpen = false;
       this._clockTimer = null;
+      this._dossierWin = null;
     }
 
     getData() {
@@ -172,16 +312,13 @@ if (AppV2 && HbsMix) {
         const evt = el.tagName === "SELECT" ? "change" : "click";
         el.addEventListener(evt, ev => map[el.dataset.action]?.call(this, ev, el));
       });
-      clearInterval(this._clockTimer);
-      this._clockTimer = setInterval(() => {
-        const el = root.querySelector(".cv-clock");
-        if (el) el.textContent = clockStr();
-      }, 15000);
+      this._startClock();
       root.addEventListener("keydown", () => this._dismissBoot(), { once: true });
     }
 
     async close(opts) {
       clearInterval(this._clockTimer);
+      this._dossierWin = null;
       return super.close(opts);
     }
   };
