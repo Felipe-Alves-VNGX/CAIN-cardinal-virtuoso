@@ -427,3 +427,192 @@
 /* dismiss animation */
 @keyframes cv-boot-fade { to { opacity: 0; pointer-events: none; } }
 .cv-boot-fade { animation: cv-boot-fade 0.45s ease-out forwards; }
+
+/* ============================================================
+   KIM — internal chat windows (Warframe '99 / MSN aesthetic)
+   ============================================================ */
+
+/* ── Internal floating window chrome ─────────────────────── */
+.cv-window {
+  position: absolute; z-index: 20; display: flex; flex-direction: column;
+  max-height: calc(100% - 36px); max-width: calc(100% - 12px);
+  background: var(--gray);
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light),
+              inset -2px -2px 0 var(--gray-d), inset 2px 2px 0 var(--face),
+              3px 3px 0 rgba(0,0,0,0.45);
+}
+.cv-window-bar {
+  display: flex; align-items: center; gap: 5px; margin: 2px; padding: 3px 4px;
+  background: linear-gradient(90deg, var(--title-a), var(--title-b));
+  color: #fff; font-weight: bold; cursor: move; user-select: none;
+}
+.cv-window-ico { width: 16px; text-align: center; }
+.cv-window-title { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-window-close {
+  width: 16px; height: 14px; font-size: 9px; line-height: 1; display: grid; place-items: center;
+  background: var(--gray); border: 0; cursor: pointer; color: #000;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d);
+}
+.cv-window-close:active { box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light); }
+.cv-window-body { flex: 1; min-height: 0; overflow: auto; margin: 0 2px 2px; background: var(--gray); }
+
+/* ── Button variants ─────────────────────────────────────── */
+.cv-btn-good { color: var(--good); font-weight: bold; }
+.cv-btn-bad  { color: var(--cain); font-weight: bold; }
+.cv-btn-on   { font-weight: bold; }
+.cv-btn-on::before { content: "● "; color: var(--good); }
+
+.cv-tag { display: inline-block; font-size: 10px; padding: 0 4px; margin: 1px 2px 1px 0;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
+.cv-tag-good { color: var(--good); }
+.cv-tag-bad  { color: var(--cain); }
+
+/* ── Shared avatar (portrait over glyph) ─────────────────── */
+.cv-kim { font-family: var(--sys); font-size: 11px; color: #000; padding: 5px; }
+.cv-kim-av {
+  position: relative; width: 30px; height: 30px; flex: none; display: grid; place-items: center;
+  background: var(--title-a); color: #fff; font-weight: bold; font-size: 12px;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 rgba(255,255,255,0.5);
+}
+.cv-kim-av .cv-portrait,
+.cv-kim-p-av .cv-portrait,
+.cv-kim-me-av .cv-portrait { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ── Contacts window ─────────────────────────────────────── */
+.cv-kim-contacts { display: flex; flex-direction: column; height: 100%; gap: 5px; }
+.cv-kim-me { display: flex; align-items: center; gap: 7px; padding: 5px;
+  background: linear-gradient(90deg, #1a1a3a, #0c1a2c); color: #d8e4ff;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 rgba(255,255,255,0.25); }
+.cv-kim-me-av { position: relative; width: 34px; height: 34px; flex: none; display: grid; place-items: center;
+  background: #000; color: #6f6; font-size: 16px; box-shadow: inset 0 0 0 1px #444; }
+.cv-kim-me-id { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cv-kim-hello { font-size: 9px; opacity: 0.7; letter-spacing: .06em; }
+.cv-kim-me-name { font-weight: bold; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-kim-online { font-size: 10px; color: #6f6; }
+
+.cv-kim-gmpick { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+.cv-kim-gmpick select { flex: 1; font-family: var(--sys); font-size: 11px; }
+
+.cv-kim-listwrap { flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-kim-group { font-size: 9px; font-weight: bold; letter-spacing: .06em; color: var(--text-dim);
+  padding: 3px 6px; background: var(--face); border-bottom: 1px solid var(--gray-d); }
+.cv-kim-list { list-style: none; margin: 0; padding: 2px; overflow: auto; flex: 1; }
+.cv-kim-contact { display: flex; align-items: center; gap: 7px; padding: 4px 5px; cursor: pointer; }
+.cv-kim-contact:hover { background: var(--title-b); color: #fff; }
+.cv-kim-contact:hover .cv-kim-c-status { color: #cfe6ff; }
+.cv-kim-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4); }
+.cv-kim-dot-off    { background: #888; }
+.cv-kim-dot-r0     { background: #5bb6ff; }
+.cv-kim-dot-r1     { background: #4caf50; }
+.cv-kim-dot-r2     { background: #e0b000; }
+.cv-kim-dot-r3     { background: #d56bd5; }
+.cv-kim-dot-broken { background: var(--cain); }
+.cv-kim-c-id { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cv-kim-c-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-kim-c-name em { font-style: italic; opacity: 0.65; font-size: 10px; }
+.cv-kim-c-status { font-size: 9px; color: var(--text-dim); }
+.cv-kim-st-off { color: #888; }  .cv-kim-st-r0 { color: #2a7fbf; }
+.cv-kim-st-r1 { color: var(--good); } .cv-kim-st-r2 { color: #9a7700; }
+.cv-kim-st-r3 { color: #a23da2; } .cv-kim-st-broken { color: var(--cain); }
+.cv-kim-broken .cv-kim-c-name { text-decoration: line-through; opacity: 0.7; }
+.cv-kim-c-prof { width: 20px; height: 18px; flex: none; font-size: 11px; background: var(--gray);
+  border: 0; cursor: pointer; box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light); }
+
+.cv-kim-foot { display: flex; flex-direction: column; gap: 4px; padding: 5px;
+  background: var(--gray); box-shadow: inset 0 1px 0 var(--light); }
+.cv-kim-foot-row { display: flex; align-items: center; gap: 5px; }
+.cv-kim-foot-row label { font-size: 10px; color: var(--text-dim); }
+.cv-kim-foot-row input[type="text"] { flex: 1; font-family: var(--sys); font-size: 11px; }
+.cv-kim-stat { font-size: 10px; color: var(--text-dim); }
+
+/* ── Profile window ──────────────────────────────────────── */
+.cv-kim-profile { display: flex; flex-direction: column; gap: 6px; }
+.cv-kim-p-head { display: flex; gap: 9px; align-items: center; padding: 4px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd); }
+.cv-kim-p-av { position: relative; width: 52px; height: 52px; flex: none; display: grid; place-items: center;
+  background: var(--title-a); color: #fff; font-weight: bold; font-size: 20px;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 rgba(255,255,255,0.5); }
+.cv-kim-p-id { display: flex; flex-direction: column; }
+.cv-kim-p-name { font-weight: bold; font-size: 15px; }
+.cv-kim-p-epi { font-size: 11px; font-style: italic; color: var(--text-dim); }
+.cv-kim-p-status { font-size: 11px; font-weight: bold; margin-top: 2px; }
+.cv-kim-p-aff { display: flex; align-items: baseline; gap: 8px; padding: 3px 5px; background: var(--face);
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
+.cv-kim-aff-num { font-weight: bold; font-size: 13px; color: var(--title-a); }
+.cv-kim-aff-rank { font-weight: bold; }
+.cv-kim-aff-next { font-size: 10px; color: var(--text-dim); }
+.cv-kim-p-bond { font-size: 10px; color: var(--text-dim); padding: 2px 0; }
+.cv-kim-p-actions { display: flex; gap: 5px; }
+.cv-kim-p-sec { background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
+.cv-kim-p-sec > summary { font-size: 10px; font-weight: bold; letter-spacing: .05em; cursor: pointer;
+  padding: 3px 6px; background: var(--face); color: var(--text-dim); }
+.cv-kim-p-sec > summary::marker { content: ""; }
+.cv-kim-p-sec > summary::before { content: "▸ "; }
+.cv-kim-p-sec[open] > summary::before { content: "▾ "; }
+.cv-kim-p-sec > summary small { font-weight: normal; opacity: 0.7; }
+.cv-kim-intel { padding: 4px 6px; }
+.cv-kim-intel p { margin: 3px 0; font-size: 10px; }
+.cv-kim-contra, .cv-kim-quirks { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px 6px; }
+.cv-kim-quirks .cv-quirk { text-align: left; font-size: 10px; }
+.cv-quirk-d { font-weight: bold; }
+.cv-kim-p-adj { display: flex; align-items: center; gap: 5px; padding: 2px 0; }
+.cv-kim-p-adj label { font-size: 10px; color: var(--text-dim); }
+.cv-kim-p-adj input { width: 54px; font-family: var(--sys); }
+.cv-kim-notes { list-style: none; margin: 0; padding: 5px 6px; max-height: 140px; overflow: auto;
+  font-size: 10px; color: var(--text-dim); }
+.cv-kim-notes li { padding: 1px 0; border-bottom: 1px dotted var(--gray-d); }
+.cv-kim-empty { font-size: 10px; color: var(--text-dim); font-style: italic; padding: 6px; }
+
+/* ── Conversation window ─────────────────────────────────── */
+.cv-kim-conv { display: flex; flex-direction: column; height: 100%; gap: 5px; }
+.cv-kim-conv-head { display: flex; align-items: center; gap: 7px; padding: 4px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd); }
+.cv-kim-conv-av { width: 26px; height: 26px; font-size: 11px; }
+.cv-kim-conv-id { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cv-kim-conv-name { font-weight: bold; font-size: 12px; }
+.cv-kim-conv-status { font-size: 9px; }
+.cv-kim-msgs { flex: 1; min-height: 80px; overflow: auto; padding: 6px;
+  display: flex; flex-direction: column; gap: 5px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-msg { max-width: 80%; display: flex; flex-direction: column; padding: 3px 7px; font-size: 11px; }
+.cv-msg-who { font-size: 8px; font-weight: bold; letter-spacing: .04em; opacity: 0.6; }
+.cv-msg-virtue { align-self: flex-start; background: #ece9ff; color: #000;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
+.cv-msg-op { align-self: flex-end; background: #d6ecff; color: #000; text-align: right;
+  box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
+.cv-kim-compose { display: flex; gap: 4px; }
+.cv-kim-compose .cv-msg-as { font-family: var(--sys); font-size: 10px; max-width: 70px; }
+.cv-kim-compose input[name="msg"] { flex: 1; font-family: var(--sys); font-size: 11px; }
+.cv-kim-marks { display: flex; flex-direction: column; gap: 4px; padding: 5px;
+  background: var(--gray); box-shadow: inset 0 1px 0 var(--light); }
+.cv-kim-marks-lbl { font-size: 9px; font-weight: bold; letter-spacing: .05em; color: var(--text-dim); }
+.cv-kim-marks-lbl small { font-weight: normal; opacity: 0.7; }
+.cv-kim-marks .cv-conv-checks { gap: 2px 8px; }
+.cv-kim-marks .cv-conv-checks label { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; cursor: pointer; }
+
+/* ── Dead Drop (contraband) window ───────────────────────── */
+.cv-kim-drop { display: flex; flex-direction: column; height: 100%; gap: 6px; }
+.cv-kim-drop-head { display: flex; align-items: center; gap: 8px; padding: 5px;
+  background: linear-gradient(90deg, #2a1300, #3a1d00); color: #ffd9a0;
+  box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 rgba(255,255,255,0.2); }
+.cv-kim-drop-ico { font-size: 22px; flex: none; }
+.cv-kim-drop-id { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cv-kim-drop-title { font-weight: bold; font-size: 14px; letter-spacing: .08em; }
+.cv-kim-drop-sub { font-size: 9px; opacity: 0.75; }
+.cv-kim-drop-stock { font-size: 11px; font-weight: bold; color: #ffe9c4;
+  padding: 2px 6px; background: rgba(0,0,0,0.4); box-shadow: inset 0 0 0 1px rgba(255,180,80,0.4); }
+.cv-kim-drop-stock.cv-kim-drop-empty { color: #ff9a9a; box-shadow: inset 0 0 0 1px rgba(255,80,80,0.5); }
+.cv-kim-drop-form { display: grid; grid-template-columns: auto 1fr; gap: 5px 7px; align-items: center; padding: 4px 6px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-kim-drop-form label { font-size: 10px; font-weight: bold; color: var(--text-dim); }
+.cv-kim-drop-form select { font-family: var(--sys); font-size: 11px; width: 100%; }
+.cv-kim-drop-form .cv-btn { grid-column: 1 / -1; margin-top: 2px; }
+.cv-kim-drop-hint { font-size: 9px; color: var(--text-dim); padding: 0 4px; line-height: 1.4; }
+.cv-kim-drop-log { flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-kim-drop-log .cv-kim-notes { max-height: none; flex: 1; }

@@ -1,0 +1,48 @@
+<div class="cv-kim cv-kim-conv">
+
+  <div class="cv-kim-conv-head">
+    <span class="cv-kim-av cv-kim-conv-av">
+      <span class="cv-kim-av-glyph">{{glyph}}</span>
+      <img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />
+    </span>
+    <span class="cv-kim-conv-id">
+      <span class="cv-kim-conv-name">{{name}}</span>
+      <span class="cv-kim-conv-status cv-kim-st-{{statusClass}}">{{status}}</span>
+    </span>
+    <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="Profile">▤</button>
+  </div>
+
+  <div class="cv-kim-msgs">
+    {{#each chat}}
+    <div class="cv-msg cv-msg-{{cls}}">
+      <span class="cv-msg-who">{{who}}</span>
+      <span class="cv-msg-text">{{text}}</span>
+    </div>
+    {{else}}
+    <div class="cv-kim-empty">Start a conversation — type below.</div>
+    {{/each}}
+  </div>
+
+  {{#if canWrite}}
+  <div class="cv-kim-compose">
+    <select class="cv-msg-as" name="msgAs">
+      <option value="op">You</option>
+      <option value="virtue">{{name}}</option>
+    </select>
+    <input type="text" name="msg" placeholder="Type a message…" autocomplete="off" />
+    <button type="button" class="cv-btn" data-action="send" data-virtue="{{key}}">Send</button>
+  </div>
+
+  <div class="cv-kim-marks">
+    <div class="cv-kim-marks-lbl">End-of-talk · Conversation <small>({{convUsed}}/{{convCap}})</small></div>
+    <div class="cv-conv-checks" data-virtue="{{key}}">
+      <label><input type="checkbox" data-cv="topic" /> Liked topic +2</label>
+      <label><input type="checkbox" data-cv="dislike" /> Disliked topic −2</label>
+      <label><input type="checkbox" data-cv="good" /> Went well +2</label>
+      <label><input type="checkbox" data-cv="conn" /> Connection +2</label>
+    </div>
+    <button type="button" class="cv-btn cv-btn-on" data-action="conv" data-virtue="{{key}}">Mark conversation</button>
+  </div>
+  {{/if}}
+
+</div>

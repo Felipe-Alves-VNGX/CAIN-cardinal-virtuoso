@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.4.0 — Phase 4: KIM chat client
+- **It's a chat now.** The tracker is reimagined as *KIM* (Kinda Important
+  Messages) — a Warframe-1999 / MSN-style messenger. Each virtue is a contact.
+- **Windows live inside the desktop.** A lightweight internal window manager
+  hosts draggable windows *within* the SEER//TEMERITY terminal (no more separate
+  Foundry windows popping out). Each window gets a taskbar button; drag by the
+  title bar, click to focus, close box on the right.
+- **Three faithful windows**:
+  - *Contacts* — your avatar + 9 virtues as contacts, each with portrait, an
+    MSN-style status dot and a relationship label (Offline → Acquaintance →
+    Friendly → Trusted → Inseparable, or 💔 Heartbroken). Footer carries codename,
+    bond slots, HQ stock and End Mission / Time Off.
+  - *Profile* — large avatar, relationship status, affinity/bond progress, INTEL
+    (likes/dislikes/food), Contraband and Quirks controls, GM admin ±, and NOTES
+    (that contact's event history).
+  - *Conversation* — a real chat log with a free-text field (write as yourself or
+    as the virtue; saved to history). At the end the GM marks the Conversation
+    outcome (Liked/Disliked topic, Went well, Connection).
+  - *Dead Drop* — a dedicated contraband window: pick a recipient + package type,
+    see live HQ stock and recent drops, send. Reachable from DROP.EXE on the
+    desktop/Start menu, the contacts footer, or a contact's profile.
+- **Rules unchanged.** All affinity/bond/contraband/quirk logic is reused as-is;
+  only the view layer changed. The classic grid (`game.cainCardinalVirtuoso.open()`)
+  still works as a macro fallback for deep admin/meta editing.
+- KIM.EXE replaces DOSSIER.EXE on the desktop and Start menu.
+
 ## 1.3.0 — Phase 3: Virtue Portraits
 - **Convention-based portraits**: each virtue card now auto-loads
   `img/virtues/<key>.webp` (e.g. `img/virtues/justice.webp`) — just drop the

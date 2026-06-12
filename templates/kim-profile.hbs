@@ -1,0 +1,80 @@
+<div class="cv-kim cv-kim-profile {{#if broken}}cv-kim-broken{{/if}}">
+
+  <div class="cv-kim-p-head">
+    <div class="cv-kim-p-av">
+      <span class="cv-kim-p-glyph">{{glyph}}</span>
+      <img class="cv-portrait cv-kim-p-img" src="{{portrait}}" alt="{{name}}" />
+    </div>
+    <div class="cv-kim-p-id">
+      <span class="cv-kim-p-name">{{name}}</span>
+      <span class="cv-kim-p-epi">{{epithet}}</span>
+      <span class="cv-kim-p-status cv-kim-st-{{statusClass}}" title="{{rankFlavor}}">{{status}}</span>
+    </div>
+  </div>
+
+  <div class="cv-kim-p-aff">
+    <span class="cv-kim-aff-num">Affinity {{affinity}}</span>
+    <span class="cv-kim-aff-rank">Bond {{rank}}</span>
+    {{#if reqNext}}<span class="cv-kim-aff-next">(next: {{reqNext}})</span>{{/if}}
+  </div>
+
+  {{#if bondText}}<div class="cv-kim-p-bond">{{bondText}}</div>{{/if}}
+
+  <div class="cv-kim-p-actions">
+    {{#if canWrite}}
+    <button type="button" class="cv-btn {{#if bonded}}cv-btn-on{{/if}}" data-action="toggleBond" data-virtue="{{key}}">
+      {{#if bonded}}Remove contact{{else}}Add contact{{/if}}
+    </button>
+    {{/if}}
+  </div>
+
+  <details class="cv-kim-p-sec" open>
+    <summary>INTEL</summary>
+    <div class="cv-kim-intel">
+      <p><b>Likes:</b> {{#each likes}}<span class="cv-tag cv-tag-good">{{this}}</span>{{/each}}</p>
+      <p><b>Dislikes:</b> {{#each dislikes}}<span class="cv-tag cv-tag-bad">{{this}}</span>{{/each}}</p>
+      {{#if food.length}}<p><b>Food:</b> {{#each food}}<span class="cv-tag">{{this}}</span>{{/each}}</p>{{/if}}
+      {{#if blasphemy}}<p><b>Blasphemy:</b> {{blasphemy}}</p>{{/if}}
+    </div>
+  </details>
+
+  {{#if canWrite}}
+  <details class="cv-kim-p-sec">
+    <summary>CONTRABAND</summary>
+    <div class="cv-kim-contra">
+      <button type="button" class="cv-btn cv-btn-on" data-action="openDrop" data-virtue="{{key}}">📦 Open Dead Drop…</button>
+    </div>
+  </details>
+
+  {{#if quirks.length}}
+  <details class="cv-kim-p-sec">
+    <summary>QUIRKS</summary>
+    <div class="cv-kim-quirks">
+      {{#each quirks}}
+      <button type="button" class="cv-btn cv-quirk {{#if good}}cv-btn-good{{else}}cv-btn-bad{{/if}}"
+              data-action="quirk" data-q="{{index}}" data-virtue="{{../key}}">
+        <span class="cv-quirk-d">{{deltaStr}}</span> {{label}}
+        {{#if perMission}}<small>({{used}}/{{perMission}})</small>{{/if}}
+      </button>
+      {{/each}}
+    </div>
+  </details>
+  {{/if}}
+
+  {{#if isGM}}
+  <div class="cv-kim-p-adj">
+    <label>Admin ±</label>
+    <input type="number" name="adj-{{key}}" value="0" step="1" />
+    <button type="button" class="cv-btn" data-action="adjust" data-virtue="{{key}}">Apply</button>
+  </div>
+  {{/if}}
+  {{/if}}
+
+  <details class="cv-kim-p-sec" open>
+    <summary>NOTES</summary>
+    <ul class="cv-kim-notes">
+      {{#each notes}}<li>{{this}}</li>{{else}}<li class="cv-kim-empty">No history yet.</li>{{/each}}
+    </ul>
+  </details>
+
+</div>

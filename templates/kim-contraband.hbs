@@ -1,0 +1,44 @@
+<div class="cv-kim cv-kim-drop">
+
+  <div class="cv-kim-drop-head">
+    <span class="cv-kim-drop-ico">📦</span>
+    <div class="cv-kim-drop-id">
+      <span class="cv-kim-drop-title">DEAD DROP</span>
+      <span class="cv-kim-drop-sub">HQ Contraband Manifest</span>
+    </div>
+    <span class="cv-kim-drop-stock {{#unless hqStock}}cv-kim-drop-empty{{/unless}}">HQ {{hqStock}}/{{hqCap}}</span>
+  </div>
+
+  {{#if canWrite}}
+  <div class="cv-kim-drop-form">
+    <label>Recipient</label>
+    <select name="dropVirtue">
+      {{#each contacts}}
+      <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}} — {{status}}{{#unless bonded}} (no bond){{/unless}}</option>
+      {{/each}}
+    </select>
+
+    <label>Package</label>
+    <select name="dropKind">
+      <option value="favorite">Favorite (+3)</option>
+      <option value="like">Like (+3)</option>
+      <option value="neutral">Neutral (+1)</option>
+      <option value="dislike">Dislike (&minus;3)</option>
+      <option value="hatemail">Hate-mail (&minus;3)</option>
+    </select>
+
+    <button type="button" class="cv-btn cv-btn-on" data-action="drop">Drop &#9656;</button>
+  </div>
+  <div class="cv-kim-drop-hint">Each drop spends 1 HQ unit. Gifts need an active contact; hate-mail does not. Stock refills when a mission closes.</div>
+  {{else}}
+  <div class="cv-kim-drop-hint">You don't have clearance to send contraband from this dossier.</div>
+  {{/if}}
+
+  <div class="cv-kim-drop-log">
+    <div class="cv-kim-group">Recent drops</div>
+    <ul class="cv-kim-notes">
+      {{#each drops}}<li>{{this}}</li>{{else}}<li class="cv-kim-empty">No drops logged yet.</li>{{/each}}
+    </ul>
+  </div>
+
+</div>
