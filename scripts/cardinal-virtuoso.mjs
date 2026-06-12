@@ -15,7 +15,7 @@ const FLAG = "dossier";
 function blankSlot() {
   return {
     bonded: false, affinity: 0, rank: 0, brokenCount: 0, pendingBreak: false,
-    convUsed: 0, contraUsed: 0, quirkUses: {}
+    convUsed: 0, contraUsed: 0, quirkUses: {}, chat: []
   };
 }
 
@@ -76,6 +76,18 @@ export function bondSlotsAllowed(d) {
 }
 export function bondedCount(d) {
   return Object.values(d.virtues).filter(s => s.bonded).length;
+}
+
+/* Append a free-text chat line to a virtue's conversation history.
+   who: "op" (the operative/player) or "virtue". Capped to RULES.logMax. */
+export function pushChat(d, vkey, who, text) {
+  const t = String(text ?? "").trim();
+  if (!t) return { ok: false, msg: "Empty message." };
+  const slot = d.virtues[vkey];
+  slot.chat ??= [];
+  slot.chat.push({ who, text: t, ts: Date.now() });
+  if (slot.chat.length > RULES.logMax) slot.chat.splice(0, slot.chat.length - RULES.logMax);
+  return { ok: true, msg: t };
 }
 
 /* ----------------------------------------------------------------------------
@@ -298,7 +310,7 @@ function buildContext(user, isGM) {
 /* Reveal each portrait only once its file actually loads; drop the <img> on
    error so the glyph placeholder shows through. Handles images already cached
    (complete) before listeners attach. */
-function wirePortraits(root) {
+export function wirePortraits(root) {
   root?.querySelectorAll("img.cv-portrait").forEach(img => {
     const show = () => img.classList.add("ok");
     const drop = () => img.remove();

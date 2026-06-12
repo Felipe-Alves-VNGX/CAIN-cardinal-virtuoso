@@ -1,0 +1,62 @@
+<div class="cv-kim cv-kim-contacts">
+
+  <div class="cv-kim-me">
+    <div class="cv-kim-me-av">
+      <span class="cv-kim-me-glyph">☻</span>
+      {{#if me.avatar}}<img class="cv-kim-me-img" src="{{me.avatar}}" alt="{{me.name}}" />{{/if}}
+    </div>
+    <div class="cv-kim-me-id">
+      <span class="cv-kim-hello">Welcome to KIM!</span>
+      <span class="cv-kim-me-name">{{me.name}}</span>
+    </div>
+    <span class="cv-kim-online">● Online</span>
+  </div>
+
+  {{#if isGM}}
+  <div class="cv-kim-gmpick">
+    <label>Dossier:</label>
+    <select data-action="pickUser">
+      {{#each allUsers}}
+      <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#unless active}} (offline){{/unless}}</option>
+      {{/each}}
+    </select>
+  </div>
+  {{/if}}
+
+  <div class="cv-kim-listwrap">
+    <div class="cv-kim-group">Contacts — Mission {{mission}}</div>
+    <ul class="cv-kim-list">
+      {{#each contacts}}
+      <li class="cv-kim-contact {{#if broken}}cv-kim-broken{{/if}}" data-action="openChat" data-virtue="{{key}}">
+        <span class="cv-kim-dot cv-kim-dot-{{statusClass}}"></span>
+        <span class="cv-kim-av">
+          <span class="cv-kim-av-glyph">{{glyph}}</span>
+          <img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />
+        </span>
+        <span class="cv-kim-c-id">
+          <span class="cv-kim-c-name">{{name}} <em>{{epithet}}</em></span>
+          <span class="cv-kim-c-status cv-kim-st-{{statusClass}}">{{status}}</span>
+        </span>
+        <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="Profile">▤</button>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <div class="cv-kim-foot">
+    <div class="cv-kim-foot-row">
+      <label>Codename</label>
+      <input type="text" name="codename" value="{{codename}}" maxlength="24" placeholder="—" />
+      <button type="button" class="cv-btn" data-action="saveMeta">Save</button>
+    </div>
+    <div class="cv-kim-foot-row">
+      <span class="cv-kim-stat">Bonds {{bondsUsed}}/{{bondsAllowed}}</span>
+      <span class="cv-kim-stat">HQ stock {{hqStock}}</span>
+      {{#if canWrite}}
+      <button type="button" class="cv-btn" data-action="endMission">End Mission</button>
+      {{#if x2mod}}<button type="button" class="cv-btn" data-action="timeOff">Time Off</button>{{/if}}
+      {{/if}}
+    </div>
+  </div>
+
+</div>

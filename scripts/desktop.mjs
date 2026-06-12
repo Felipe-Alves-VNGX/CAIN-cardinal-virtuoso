@@ -1,4 +1,5 @@
-import { CardinalApp } from "./cardinal-virtuoso.mjs";
+import { WindowManager } from "./winman.mjs";
+import { KimController } from "./kim.mjs";
 
 const MOD    = "cain-cardinal-virtuoso";
 const AppV2  = foundry.applications?.api?.ApplicationV2;
@@ -52,12 +53,22 @@ const _deskMethods = {
       const el = this._rootEl()?.querySelector(".cv-clock");
       if (el) el.textContent = clockStr();
     }, 15000);
+  },
+
+  /* Build the internal window manager + KIM controller against the live DOM. */
+  _initShell() {
+    const root = this._rootEl();
+    const host = root?.querySelector(".cv-desktop");
+    const tray = root?.querySelector("#cv-task-open");
+    if (!host || !tray) return;
+    this._wm = new WindowManager(host, tray);
+    this._kim = new KimController(this._wm, game.user.id);
   }
 };
 
 /* ── action handlers ── */
 function desk_openDossier() {
-  new CardinalApp({ targetUserId: game.user.id }).render(true);
+  this._kim?.openContacts();
   this._closeStart();
 }
 
@@ -126,11 +137,13 @@ if (AppV2 && HbsMix) {
     _onRender(ctx, opts) {
       super._onRender?.(ctx, opts);
       this._startClock();
+      this._initShell();
       this.element?.addEventListener("keydown", () => this._dismissBoot(), { once: true });
     }
 
     async close(opts) {
       clearInterval(this._clockTimer);
+      this._wm?.closeAll();
       return super.close(opts);
     }
   };
@@ -177,11 +190,13 @@ if (AppV2 && HbsMix) {
         const el = root.querySelector(".cv-clock");
         if (el) el.textContent = clockStr();
       }, 15000);
+      this._initShell();
       root.addEventListener("keydown", () => this._dismissBoot(), { once: true });
     }
 
     async close(opts) {
       clearInterval(this._clockTimer);
+      this._wm?.closeAll();
       return super.close(opts);
     }
   };
