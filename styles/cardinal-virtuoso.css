@@ -117,14 +117,18 @@
 .cv-card.is-broken { background: var(--cain-bg); }
 
 .cv-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.cv-avatar { position: relative; width: 26px; height: 26px; flex: none; }
 .cv-glyph {
   width: 26px; height: 26px; display: grid; place-items: center; font-weight: bold; font-size: 13px;
   color: #fff; background: var(--title-a);
   box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light);
 }
 .cv-card.is-broken .cv-glyph { background: var(--cain); }
-.cv-portrait { width: 26px; height: 26px; object-fit: cover; display: block;
+/* Portrait overlays the glyph; hidden until JS confirms the file loaded
+   (wirePortraits adds .ok), so a missing image just shows the glyph. */
+.cv-portrait { position: absolute; inset: 0; width: 26px; height: 26px; object-fit: cover; display: none;
   box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light); }
+.cv-portrait.ok { display: block; }
 .cv-card-id { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.15; }
 .cv-vname { font-weight: bold; font-size: 13px; }
 .cv-vepi { font-size: 10px; color: var(--text-dim); }

@@ -3,8 +3,9 @@
 // quirks: per-virtue affinity triggers. perMission caps how often one can fire per mission.
 // bondReactions: delta applied to THIS virtue when the player bonds/upgrades the KEYED virtue
 //   ("*" = any other virtue).
-// portrait: path to a portrait image, relative to the module root (e.g. "img/virtues/justice.webp").
-//   Leave empty to show the glyph letter placeholder. Drop images in img/virtues/ for Phase 3.
+// portrait: optional override path (relative to module root) for a virtue's portrait.
+//   By default each virtue auto-loads img/virtues/<key>.webp; just drop files there.
+//   A missing file falls back to the glyph placeholder automatically.
 export const VIRTUES = {
   justice: {
     name: "Justice", epithet: "The Executioner", glyph: "I", portrait: "",
