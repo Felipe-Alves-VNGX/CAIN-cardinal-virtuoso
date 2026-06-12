@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — Phase 3: Virtue Portraits
+- **Convention-based portraits**: each virtue card now auto-loads
+  `img/virtues/<key>.webp` (e.g. `img/virtues/justice.webp`) — just drop the
+  files in, no code edits needed. The `portrait` field in `data.mjs` remains as
+  an optional per-virtue override.
+- **Graceful fallback**: a missing or broken portrait file shows the Roman-numeral
+  glyph placeholder as before, with no broken-image icon flash. Portraits reveal
+  only once their file confirms loaded.
+- Portrait overlays the glyph in a fixed 26×26 avatar slot, preserving the
+  Win95 inset chrome.
+
 ## 1.2.0 — Höllvania '99 OS Shell
 - **Desktop launcher**: the scene-controls button now opens the *SEER//TEMERITY Terminal*
   — a Win95-style desktop with wallpaper, icons and a taskbar.

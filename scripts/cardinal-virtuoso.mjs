@@ -262,7 +262,10 @@ function buildContext(user, isGM) {
   const d = getDossier(user);
   const virtues = Object.entries(VIRTUES).map(([key, v]) => {
     const slot = d.virtues[key];
-    const portraitPath = v.portrait ? `modules/${MOD}/${v.portrait}` : "";
+    // Convention: img/virtues/<key>.webp is used automatically; `portrait` in
+    // data.mjs is an optional override. Missing files fall back to the glyph at
+    // render time (see wirePortraits), so this path is always set.
+    const portraitPath = `modules/${MOD}/${v.portrait || `img/virtues/${key}.webp`}`;
     return {
       key, ...v,
       portrait: portraitPath,
@@ -290,6 +293,19 @@ function buildContext(user, isGM) {
     log: [...d.log].reverse(),
     virtues
   };
+}
+
+/* Reveal each portrait only once its file actually loads; drop the <img> on
+   error so the glyph placeholder shows through. Handles images already cached
+   (complete) before listeners attach. */
+function wirePortraits(root) {
+  root?.querySelectorAll("img.cv-portrait").forEach(img => {
+    const show = () => img.classList.add("ok");
+    const drop = () => img.remove();
+    if (img.complete) return img.naturalWidth ? show() : drop();
+    img.addEventListener("load", show);
+    img.addEventListener("error", drop);
+  });
 }
 
 let CardinalApp;
@@ -338,6 +354,7 @@ if (AppV2 && Handlebars2) {
     _onRender(context, options) {
       super._onRender?.(context, options);
       const root = this.element;
+      wirePortraits(root);
       const sel = root.querySelector('[data-action="pickUser"]');
       if (sel) sel.addEventListener("change", (ev) => CardinalApp_onPickUser.call(this, ev, ev.currentTarget));
     }
@@ -365,6 +382,7 @@ if (AppV2 && Handlebars2) {
     activateListeners(html) {
       super.activateListeners(html);
       const root = html[0] ?? html;
+      wirePortraits(root);
       const map = ACTIONS();
       root.querySelectorAll("[data-action]").forEach(el => {
         const evt = el.tagName === "SELECT" ? "change" : "click";
