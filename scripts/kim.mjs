@@ -39,6 +39,36 @@ function relStatus(slot) {
 
 function convCap(d) { return d.x2mod ? RULES.conv.perMissionX2 : RULES.conv.perMission; }
 
+/* Match a CAIN bond item name (e.g. "Charity") to a module virtue key. */
+function virtueKeyByName(name) {
+  if (!name) return null;
+  const n = String(name).trim().toLowerCase();
+  return Object.keys(VIRTUES).find(k => VIRTUES[k].name.toLowerCase() === n) ?? null;
+}
+
+/* The compendium Item id that a CAIN bond entry's bondId points at. */
+function bondSourceId(item) {
+  const src = item?._stats?.compendiumSource ?? item?.flags?.core?.sourceId ?? "";
+  return String(src).split(".").pop();
+}
+
+/* Read a linked CAIN character actor's started bonds → { virtueKey: currentLevel }.
+   CAIN stores levels in actor.system.bonds[{bondId, currentLevel}]; each bondId
+   resolves to an embedded `bond` item whose name maps to one of our virtues. */
+function actorBondLevels(actor) {
+  const out = {};
+  const bonds = actor?.system?.bonds;
+  if (!Array.isArray(bonds)) return out;
+  const items = Array.from(actor.items ?? []).filter(it => it.type === "bond");
+  for (const b of bonds) {
+    const item = items.find(it => bondSourceId(it) === b.bondId)
+      ?? items.find(it => virtueKeyByName(it.name));
+    const key = item ? virtueKeyByName(item.name) : null;
+    if (key) out[key] = Math.max(0, Math.min(3, Number(b.currentLevel) || 0));
+  }
+  return out;
+}
+
 export class KimController {
   constructor(wm, targetUserId) {
     this.wm = wm;
@@ -52,21 +82,64 @@ export class KimController {
       this.refresh();
     };
     Hooks.on("updateUser", this._onUpdateUser);
+    // Also re-render when the linked CAIN character changes (new bond started,
+    // currentLevel edited on the sheet) so the contact list stays current.
+    this._onUpdateActor = (actor) => {
+      if (actor.id && actor.id === this.targetActor?.id) this.refresh();
+    };
+    Hooks.on("updateActor", this._onUpdateActor);
   }
 
   teardown() {
     if (this._onUpdateUser) Hooks.off("updateUser", this._onUpdateUser);
+    if (this._onUpdateActor) Hooks.off("updateActor", this._onUpdateActor);
     this._onUpdateUser = null;
+    this._onUpdateActor = null;
   }
 
   get targetUser() { return game.users.get(this.targetUserId) ?? game.user; }
+  get targetActor() { return this.targetUser?.character ?? null; }
   canWrite() { return game.user.isGM || this.targetUserId === game.user.id; }
+
+  /* Which virtues the viewer sees: players see only their character's started
+     bonds; the GM keeps full access to all 9 for admin. */
+  bondInfo() {
+    const actor = this.targetActor;
+    const levels = actorBondLevels(actor);
+    return { actor, levels, bondedKeys: new Set(Object.keys(levels)) };
+  }
+  visibleEntries(bondedKeys) {
+    const all = Object.entries(VIRTUES);
+    return game.user.isGM ? all : all.filter(([k]) => bondedKeys.has(k));
+  }
+
+  /* KIM is authoritative: push each virtue's current rank to the linked CAIN
+     character's bond currentLevel, so the sheet edits itself as bonds grow. */
+  async syncActorBonds(d) {
+    const actor = this.targetActor;
+    const bonds = actor?.system?.bonds;
+    if (!Array.isArray(bonds) || !bonds.length) return;
+    const items = Array.from(actor.items ?? []).filter(it => it.type === "bond");
+    let changed = false;
+    const next = bonds.map(b => {
+      const item = items.find(it => bondSourceId(it) === b.bondId);
+      const key = item ? virtueKeyByName(item.name) : null;
+      if (!key) return b;
+      const level = Math.max(0, Math.min(3, d.virtues[key]?.rank ?? 0));
+      if (level !== b.currentLevel) { changed = true; return { ...b, currentLevel: level }; }
+      return b;
+    });
+    if (!changed) return;
+    try { await actor.update({ "system.bonds": next }); }
+    catch (e) { console.warn(`${MOD} | could not sync bond levels to actor`, e); }
+  }
 
   /* ── context builders ── */
   contactsCtx() {
     const d = getDossier(this.targetUser);
-    const contacts = Object.entries(VIRTUES).map(([key, v]) => {
-      const slot = d.virtues[key];
+    const { actor, bondedKeys } = this.bondInfo();
+    const contacts = this.visibleEntries(bondedKeys).map(([key, v]) => {
+      const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
       const st = relStatus(slot);
       return {
         key, name: v.name, epithet: v.epithet, glyph: v.glyph,
@@ -80,7 +153,9 @@ export class KimController {
       isGM: game.user.isGM, canWrite: this.canWrite(),
       mission: d.mission, codename: d.codename, hqStock: d.hqStock, x2mod: d.x2mod,
       bondsUsed: bondedCount(d), bondsAllowed: bondSlotsAllowed(d),
-      contacts
+      contacts,
+      noCharacter: !game.user.isGM && !actor,
+      noBonds: !game.user.isGM && !!actor && bondedKeys.size === 0
     };
     if (game.user.isGM) {
       ctx.allUsers = game.users.filter(u => !u.isGM).map(u => ({
@@ -93,7 +168,8 @@ export class KimController {
   profileCtx(key) {
     const d = getDossier(this.targetUser);
     const v = VIRTUES[key];
-    const slot = d.virtues[key];
+    const { bondedKeys } = this.bondInfo();
+    const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
     const st = relStatus(slot);
     return {
       key, name: v.name, epithet: v.epithet, glyph: v.glyph, portrait: portraitPath(key, v),
@@ -113,8 +189,9 @@ export class KimController {
 
   contrabandCtx(selectedKey) {
     const d = getDossier(this.targetUser);
-    const contacts = Object.entries(VIRTUES).map(([key, v]) => {
-      const slot = d.virtues[key];
+    const { bondedKeys } = this.bondInfo();
+    const contacts = this.visibleEntries(bondedKeys).map(([key, v]) => {
+      const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
       return { key, name: v.name, status: relStatus(slot).label, bonded: slot.bonded, selected: key === selectedKey };
     });
     return {
@@ -246,6 +323,7 @@ export class KimController {
   async commit(d, r) {
     if (r && r.ok === false) { ui.notifications.warn(r.msg); return false; }
     await setDossier(this.targetUser, d);
+    await this.syncActorBonds(d);
     if (r?.msg) ui.notifications.info(r.msg);
     await this.refresh();
     return true;
@@ -381,6 +459,7 @@ export class KimController {
     const d = getDossier(this.targetUser);
     const { ups, haul } = endMission(d);
     await setDossier(this.targetUser, d);
+    await this.syncActorBonds(d);
     ui.notifications.info(ups.length
       ? `Mission closed. Rank-ups: ${ups.join(", ")}. Haul +${haul}.`
       : `Mission closed. No rank-ups. Haul +${haul}.`);

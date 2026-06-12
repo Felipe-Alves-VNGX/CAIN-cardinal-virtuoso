@@ -634,3 +634,7 @@
   font-weight: bold; color: var(--text-dim); padding: 2px 1px; }
 .cv-kim-hq-actions { display: flex; gap: 6px; margin-top: 2px; }
 .cv-kim-hq-actions .cv-btn { flex: 1; }
+
+/* Empty contact list (no linked character / no started bonds) */
+.cv-kim-empty-state { font-size: 10px; color: var(--text-dim); line-height: 1.5;
+  padding: 8px 6px; text-align: center; font-style: italic; }

@@ -25,6 +25,11 @@
 
   <div class="cv-kim-listwrap">
     <div class="cv-kim-group">Contacts — Mission {{mission}}</div>
+    {{#if noCharacter}}
+    <div class="cv-kim-empty-state">No character linked to your user. Ask the GM to assign your CAIN sheet.</div>
+    {{else if noBonds}}
+    <div class="cv-kim-empty-state">No bonds started yet. Begin a Virtue bond on your character sheet and it will appear here.</div>
+    {{/if}}
     <ul class="cv-kim-list">
       {{#each contacts}}
       <li class="cv-kim-contact {{#if broken}}cv-kim-broken{{/if}}" data-action="openChat" data-virtue="{{key}}">

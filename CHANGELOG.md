@@ -31,6 +31,14 @@
 - **Classic grid retired.** All affinity/bond/contraband/quirk logic is reused
   as-is; only the view layer changed. The standalone dossier grid is gone —
   `game.cainCardinalVirtuoso.open()` now opens the KIM desktop.
+- **CAIN character integration.** KIM now reads the character linked to each
+  player (`user.character`) and shows *only* the Virtue bonds that character has
+  started on their CAIN sheet — players see just their contacts; the GM keeps
+  all 9 for admin. Bonds are matched by Virtue name (e.g. Charity ↔ "The Twins").
+  KIM is authoritative on bond level: whenever a Virtue ranks up, the character
+  sheet's `currentLevel` is edited automatically, and the contact list refreshes
+  live when a bond is added or its level changes on the sheet. Players with no
+  linked sheet or no started bonds get a clear empty-state message.
 - KIM.EXE replaces DOSSIER.EXE on the desktop and Start menu.
 
 ## 1.3.0 — Phase 3: Virtue Portraits
