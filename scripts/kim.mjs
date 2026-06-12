@@ -97,6 +97,20 @@ export class KimController {
     };
   }
 
+  contrabandCtx(selectedKey) {
+    const d = getDossier(this.targetUser);
+    const contacts = Object.entries(VIRTUES).map(([key, v]) => {
+      const slot = d.virtues[key];
+      return { key, name: v.name, status: relStatus(slot).label, bonded: slot.bonded, selected: key === selectedKey };
+    });
+    return {
+      canWrite: this.canWrite(),
+      hqStock: d.hqStock, hqCap: RULES.contraband.hqCap,
+      contacts,
+      drops: [...d.log].reverse().filter(l => l.includes("Contraband")).slice(0, 12)
+    };
+  }
+
   convCtx(key) {
     const d = getDossier(this.targetUser);
     const v = VIRTUES[key];
@@ -136,6 +150,17 @@ export class KimController {
     });
   }
 
+  async openContraband(selectedKey) {
+    const id = "kim-contraband";
+    const html = await renderTpl(T("kim-contraband.hbs"), this.contrabandCtx(selectedKey));
+    this._open.add(id);
+    this.wm.open(id, {
+      title: "Dead Drop", icon: "📦", width: 320, height: 460,
+      html, onBody: (b) => this.wireContraband(b),
+      onClose: () => this._open.delete(id)
+    });
+  }
+
   async openConv(key) {
     const id = `kim-conv-${key}`;
     const html = await renderTpl(T("kim-conversation.hbs"), this.convCtx(key));
@@ -156,6 +181,15 @@ export class KimController {
       } else if (id.startsWith("kim-profile-")) {
         const key = id.slice("kim-profile-".length);
         this.wm.setHtml(id, await renderTpl(T("kim-profile.hbs"), this.profileCtx(key)), (b) => this.wireProfile(b));
+      } else if (id === "kim-contraband") {
+        const body = this.wm.bodyEl(id);
+        const selKey = body?.querySelector('select[name="dropVirtue"]')?.value;
+        const selKind = body?.querySelector('select[name="dropKind"]')?.value;
+        this.wm.setHtml(id, await renderTpl(T("kim-contraband.hbs"), this.contrabandCtx(selKey)), (b) => {
+          const kindSel = b.querySelector('select[name="dropKind"]');
+          if (kindSel && selKind) kindSel.value = selKind;
+          this.wireContraband(b);
+        });
       } else if (id.startsWith("kim-conv-")) {
         const key = id.slice("kim-conv-".length);
         const prev = this.wm.bodyEl(id)?.querySelector('input[name="msg"]')?.value ?? "";
@@ -195,15 +229,22 @@ export class KimController {
       openProfile:(ev, el) => { ev.stopPropagation(); this.openProfile(el.dataset.virtue); },
       pickUser:   (ev, el) => this.onPickUser(el.value),
       saveMeta:   (ev, el, b) => this.onSaveMeta(b),
+      openDrop:   () => this.openContraband(),
       endMission: () => this.onEndMission(),
       timeOff:    () => this.onTimeOff()
+    });
+  }
+
+  wireContraband(body) {
+    this._delegate(body, {
+      drop: (ev, el, b) => this.onDrop(b)
     });
   }
 
   wireProfile(body) {
     this._delegate(body, {
       toggleBond:  (ev, el) => this.onToggleBond(el.dataset.virtue),
-      contra:      (ev, el) => this.onContra(el.dataset.virtue, el.dataset.kind),
+      openDrop:    (ev, el) => this.openContraband(el.dataset.virtue),
       quirk:       (ev, el) => this.onQuirk(el.dataset.virtue, Number(el.dataset.q)),
       adjust:      (ev, el, b) => this.onAdjust(el.dataset.virtue, b),
       openProfile: (ev, el) => this.openProfile(el.dataset.virtue)
@@ -241,8 +282,11 @@ export class KimController {
     await this.commit(d, r);
   }
 
-  async onContra(key, kind) {
+  async onDrop(body) {
     if (!this.canWrite()) return ui.notifications.warn("No clearance.");
+    const key = body.querySelector('select[name="dropVirtue"]')?.value;
+    const kind = body.querySelector('select[name="dropKind"]')?.value;
+    if (!key || !kind) return;
     const d = getDossier(this.targetUser);
     await this.commit(d, applyContraband(d, key, kind));
   }

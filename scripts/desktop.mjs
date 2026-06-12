@@ -72,6 +72,11 @@ function desk_openDossier() {
   this._closeStart();
 }
 
+function desk_openContraband() {
+  this._kim?.openContraband();
+  this._closeStart();
+}
+
 function desk_openAbout() {
   this._closeStart();
   const version = game.modules.get(MOD)?.version ?? "?";
@@ -91,7 +96,8 @@ function desk_shutDown()    { this.close(); }
 function desk_bootDismiss() { this._dismissBoot(); }
 
 const DESK_ACTIONS = () => ({
-  openDossier: desk_openDossier,
+  openDossier:    desk_openDossier,
+  openContraband: desk_openContraband,
   openAbout:   desk_openAbout,
   toggleStart: desk_toggleStart,
   shutDown:    desk_shutDown,

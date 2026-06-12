@@ -39,14 +39,10 @@
   </details>
 
   {{#if canWrite}}
-  <details class="cv-kim-p-sec" open>
-    <summary>CONTRABAND <small>(HQ {{hqStock}})</small></summary>
+  <details class="cv-kim-p-sec">
+    <summary>CONTRABAND</summary>
     <div class="cv-kim-contra">
-      <button type="button" class="cv-btn cv-btn-good" data-action="contra" data-kind="favorite" data-virtue="{{key}}">Favorite +3</button>
-      <button type="button" class="cv-btn cv-btn-good" data-action="contra" data-kind="like" data-virtue="{{key}}">Like +3</button>
-      <button type="button" class="cv-btn" data-action="contra" data-kind="neutral" data-virtue="{{key}}">Neutral +1</button>
-      <button type="button" class="cv-btn cv-btn-bad" data-action="contra" data-kind="dislike" data-virtue="{{key}}">Dislike −3</button>
-      <button type="button" class="cv-btn cv-btn-bad" data-action="contra" data-kind="hatemail" data-virtue="{{key}}">Hate-mail −3</button>
+      <button type="button" class="cv-btn cv-btn-on" data-action="openDrop" data-virtue="{{key}}">📦 Open Dead Drop…</button>
     </div>
   </details>
 

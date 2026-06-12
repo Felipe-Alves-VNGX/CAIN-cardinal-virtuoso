@@ -18,6 +18,9 @@
   - *Conversation* — a real chat log with a free-text field (write as yourself or
     as the virtue; saved to history). At the end the GM marks the Conversation
     outcome (Liked/Disliked topic, Went well, Connection).
+  - *Dead Drop* — a dedicated contraband window: pick a recipient + package type,
+    see live HQ stock and recent drops, send. Reachable from DROP.EXE on the
+    desktop/Start menu, the contacts footer, or a contact's profile.
 - **Rules unchanged.** All affinity/bond/contraband/quirk logic is reused as-is;
   only the view layer changed. The classic grid (`game.cainCardinalVirtuoso.open()`)
   still works as a macro fallback for deep admin/meta editing.

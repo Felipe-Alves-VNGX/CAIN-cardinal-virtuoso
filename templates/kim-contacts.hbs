@@ -52,11 +52,14 @@
     <div class="cv-kim-foot-row">
       <span class="cv-kim-stat">Bonds {{bondsUsed}}/{{bondsAllowed}}</span>
       <span class="cv-kim-stat">HQ stock {{hqStock}}</span>
-      {{#if canWrite}}
+      {{#if canWrite}}<button type="button" class="cv-btn" data-action="openDrop">📦 Dead Drop</button>{{/if}}
+    </div>
+    {{#if canWrite}}
+    <div class="cv-kim-foot-row">
       <button type="button" class="cv-btn" data-action="endMission">End Mission</button>
       {{#if x2mod}}<button type="button" class="cv-btn" data-action="timeOff">Time Off</button>{{/if}}
-      {{/if}}
     </div>
+    {{/if}}
   </div>
 
 </div>
