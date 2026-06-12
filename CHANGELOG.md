@@ -21,9 +21,16 @@
   - *Dead Drop* — a dedicated contraband window: pick a recipient + package type,
     see live HQ stock and recent drops, send. Reachable from DROP.EXE on the
     desktop/Start menu, the contacts footer, or a contact's profile.
-- **Rules unchanged.** All affinity/bond/contraband/quirk logic is reused as-is;
-  only the view layer changed. The classic grid (`game.cainCardinalVirtuoso.open()`)
-  still works as a macro fallback for deep admin/meta editing.
+  - *HQ Console* — a dedicated config window (⚙ HQ in the contacts footer) for the
+    deep meta the old grid used to own: codename, X2 mod, Gate user, Covert/CAT
+    counts, manual HQ stock, plus the next-haul/bond readout and a Wipe Dossier
+    control. Codename in the contacts footer is now read-only (edit it here).
+- **Live sync.** KIM windows now re-render automatically when the viewed dossier
+  changes anywhere — a GM editing a player, or the player's own second client —
+  via a `updateUser` hook, with proper teardown when the desktop closes.
+- **Classic grid retired.** All affinity/bond/contraband/quirk logic is reused
+  as-is; only the view layer changed. The standalone dossier grid is gone —
+  `game.cainCardinalVirtuoso.open()` now opens the KIM desktop.
 - KIM.EXE replaces DOSSIER.EXE on the desktop and Start menu.
 
 ## 1.3.0 — Phase 3: Virtue Portraits

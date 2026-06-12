@@ -61,6 +61,7 @@ const _deskMethods = {
     const host = root?.querySelector(".cv-desktop");
     const tray = root?.querySelector("#cv-task-open");
     if (!host || !tray) return;
+    this._kim?.teardown();
     this._wm = new WindowManager(host, tray);
     this._kim = new KimController(this._wm, game.user.id);
   }
@@ -149,6 +150,7 @@ if (AppV2 && HbsMix) {
 
     async close(opts) {
       clearInterval(this._clockTimer);
+      this._kim?.teardown();
       this._wm?.closeAll();
       return super.close(opts);
     }
@@ -202,6 +204,7 @@ if (AppV2 && HbsMix) {
 
     async close(opts) {
       clearInterval(this._clockTimer);
+      this._kim?.teardown();
       this._wm?.closeAll();
       return super.close(opts);
     }

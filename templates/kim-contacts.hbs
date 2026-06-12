@@ -46,8 +46,8 @@
   <div class="cv-kim-foot">
     <div class="cv-kim-foot-row">
       <label>Codename</label>
-      <input type="text" name="codename" value="{{codename}}" maxlength="24" placeholder="—" />
-      <button type="button" class="cv-btn" data-action="saveMeta">Save</button>
+      <input type="text" name="codename" value="{{codename}}" readonly placeholder="—" title="Edit in HQ Console" />
+      {{#if canWrite}}<button type="button" class="cv-btn" data-action="openHQ">⚙ HQ</button>{{/if}}
     </div>
     <div class="cv-kim-foot-row">
       <span class="cv-kim-stat">Bonds {{bondsUsed}}/{{bondsAllowed}}</span>

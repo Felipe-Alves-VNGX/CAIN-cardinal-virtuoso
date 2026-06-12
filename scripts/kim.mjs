@@ -9,7 +9,8 @@ import {
   getDossier, setDossier, wirePortraits,
   applyConversation, applyContraband, applyQuirk, applyAdjustment,
   toggleBond, endMission, timeOff, pushChat,
-  rankRequirement, bondedCount, bondSlotsAllowed
+  rankRequirement, bondedCount, bondSlotsAllowed,
+  contrabandHaul, blankDossier, foundryConfirm
 } from "./cardinal-virtuoso.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
@@ -43,6 +44,19 @@ export class KimController {
     this.wm = wm;
     this.targetUserId = targetUserId ?? game.user.id;
     this._open = new Set();   // KIM window ids currently open
+    // Live-sync: re-render open windows when the viewed dossier flag changes
+    // anywhere (GM editing a player, the player's own second client, etc.).
+    this._onUpdateUser = (user, changes) => {
+      if (user.id !== this.targetUserId) return;
+      if (!foundry.utils.hasProperty(changes, `flags.${MOD}.dossier`)) return;
+      this.refresh();
+    };
+    Hooks.on("updateUser", this._onUpdateUser);
+  }
+
+  teardown() {
+    if (this._onUpdateUser) Hooks.off("updateUser", this._onUpdateUser);
+    this._onUpdateUser = null;
   }
 
   get targetUser() { return game.users.get(this.targetUserId) ?? game.user; }
@@ -111,6 +125,19 @@ export class KimController {
     };
   }
 
+  hqCtx() {
+    const d = getDossier(this.targetUser);
+    return {
+      canWrite: this.canWrite(), isGM: game.user.isGM,
+      codename: d.codename, mission: d.mission,
+      x2mod: d.x2mod, gateUser: d.gateUser,
+      covert: d.covert, cat: d.cat,
+      hqStock: d.hqStock, hqCap: RULES.contraband.hqCap,
+      nextHaul: contrabandHaul(d),
+      bondsUsed: bondedCount(d), bondsAllowed: bondSlotsAllowed(d)
+    };
+  }
+
   convCtx(key) {
     const d = getDossier(this.targetUser);
     const v = VIRTUES[key];
@@ -161,6 +188,17 @@ export class KimController {
     });
   }
 
+  async openHQ() {
+    const id = "kim-hq";
+    const html = await renderTpl(T("kim-hq.hbs"), this.hqCtx());
+    this._open.add(id);
+    this.wm.open(id, {
+      title: "HQ Console", icon: "⚙", width: 320, height: 480,
+      html, onBody: (b) => this.wireHQ(b),
+      onClose: () => this._open.delete(id)
+    });
+  }
+
   async openConv(key) {
     const id = `kim-conv-${key}`;
     const html = await renderTpl(T("kim-conversation.hbs"), this.convCtx(key));
@@ -181,6 +219,8 @@ export class KimController {
       } else if (id.startsWith("kim-profile-")) {
         const key = id.slice("kim-profile-".length);
         this.wm.setHtml(id, await renderTpl(T("kim-profile.hbs"), this.profileCtx(key)), (b) => this.wireProfile(b));
+      } else if (id === "kim-hq") {
+        this.wm.setHtml(id, await renderTpl(T("kim-hq.hbs"), this.hqCtx()), (b) => this.wireHQ(b));
       } else if (id === "kim-contraband") {
         const body = this.wm.bodyEl(id);
         const selKey = body?.querySelector('select[name="dropVirtue"]')?.value;
@@ -228,8 +268,8 @@ export class KimController {
       openChat:   (ev, el) => this.openConv(el.dataset.virtue),
       openProfile:(ev, el) => { ev.stopPropagation(); this.openProfile(el.dataset.virtue); },
       pickUser:   (ev, el) => this.onPickUser(el.value),
-      saveMeta:   (ev, el, b) => this.onSaveMeta(b),
       openDrop:   () => this.openContraband(),
+      openHQ:     () => this.openHQ(),
       endMission: () => this.onEndMission(),
       timeOff:    () => this.onTimeOff()
     });
@@ -238,6 +278,13 @@ export class KimController {
   wireContraband(body) {
     this._delegate(body, {
       drop: (ev, el, b) => this.onDrop(b)
+    });
+  }
+
+  wireHQ(body) {
+    this._delegate(body, {
+      saveHQ: (ev, el, b) => this.onSaveHQ(b),
+      reset:  () => this.onResetDossier()
     });
   }
 
@@ -346,11 +393,27 @@ export class KimController {
     await this.commit(d, timeOff(d));
   }
 
-  async onSaveMeta(body) {
+  async onSaveHQ(body) {
     if (!this.canWrite()) return ui.notifications.warn("No clearance.");
     const d = getDossier(this.targetUser);
-    const v = body.querySelector('input[name="codename"]')?.value;
-    if (v != null) d.codename = v;
-    await this.commit(d, { ok: true, msg: "Codename saved." });
+    const codename = body.querySelector('input[name="codename"]')?.value;
+    if (codename != null) d.codename = codename;
+    d.x2mod = !!body.querySelector('input[name="x2mod"]')?.checked;
+    d.gateUser = !!body.querySelector('input[name="gateUser"]')?.checked;
+    const num = (name, max, cur) => {
+      const n = parseInt(body.querySelector(`input[name="${name}"]`)?.value ?? cur, 10);
+      return Math.max(0, Math.min(max, isNaN(n) ? 0 : n));
+    };
+    d.covert = num("covert", 9, d.covert);
+    d.cat = num("cat", 9, d.cat);
+    d.hqStock = num("hqStock", RULES.contraband.hqCap, d.hqStock);
+    await this.commit(d, { ok: true, msg: "HQ console saved." });
+  }
+
+  async onResetDossier() {
+    if (!this.canWrite()) return ui.notifications.warn("No clearance.");
+    const ok = await foundryConfirm("Wipe this dossier? This cannot be undone.");
+    if (!ok) return;
+    await this.commit(blankDossier(), { ok: true, msg: "Dossier wiped." });
   }
 }

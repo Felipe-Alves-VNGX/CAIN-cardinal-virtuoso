@@ -1,0 +1,56 @@
+<div class="cv-kim cv-kim-hq">
+
+  <div class="cv-kim-drop-head">
+    <span class="cv-kim-drop-ico">⚙</span>
+    <div class="cv-kim-drop-id">
+      <span class="cv-kim-drop-title">HQ CONSOLE</span>
+      <span class="cv-kim-drop-sub">SEER//TEMERITY operative config</span>
+    </div>
+    <span class="cv-kim-drop-stock">M{{mission}}</span>
+  </div>
+
+  {{#if canWrite}}
+  <div class="cv-kim-hq-form">
+    <div class="cv-kim-hq-row">
+      <label>Codename</label>
+      <input type="text" name="codename" value="{{codename}}" maxlength="24" placeholder="—" />
+    </div>
+
+    <div class="cv-kim-hq-row cv-kim-hq-check">
+      <label><input type="checkbox" name="x2mod" {{#if x2mod}}checked{{/if}} /> X2 mod (double caps + time off)</label>
+    </div>
+    <div class="cv-kim-hq-row cv-kim-hq-check">
+      <label><input type="checkbox" name="gateUser" {{#if gateUser}}checked{{/if}} /> Gate user (+1 contraband haul)</label>
+    </div>
+
+    <div class="cv-kim-hq-grid">
+      <div class="cv-kim-hq-cell">
+        <label>Covert</label>
+        <input type="number" name="covert" value="{{covert}}" min="0" max="9" />
+      </div>
+      <div class="cv-kim-hq-cell">
+        <label>CAT</label>
+        <input type="number" name="cat" value="{{cat}}" min="0" max="9" />
+      </div>
+      <div class="cv-kim-hq-cell">
+        <label>HQ stock</label>
+        <input type="number" name="hqStock" value="{{hqStock}}" min="0" max="{{hqCap}}" />
+      </div>
+    </div>
+
+    <div class="cv-kim-hq-readout">
+      <span>Next haul +{{nextHaul}}</span>
+      <span>Bonds {{bondsUsed}}/{{bondsAllowed}}</span>
+    </div>
+
+    <div class="cv-kim-hq-actions">
+      <button type="button" class="cv-btn cv-btn-on" data-action="saveHQ">Save</button>
+      <button type="button" class="cv-btn cv-btn-bad" data-action="reset">Wipe Dossier</button>
+    </div>
+  </div>
+  <div class="cv-kim-drop-hint">Covert + ½CAT (min 2) becomes contraband stock when a mission closes; Gate users get +1. HQ stock caps at {{hqCap}}.</div>
+  {{else}}
+  <div class="cv-kim-drop-hint">You don't have clearance to edit this dossier's HQ config.</div>
+  {{/if}}
+
+</div>
