@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.5.0 — CAIN sheet integration, HQ Console & live sync
+- **CAIN character integration.** KIM now reads the character linked to each
+  player (`user.character`) and shows *only* the Virtue bonds that character has
+  started on their CAIN sheet — players see just their contacts; the GM keeps
+  all 9 for admin. Bonds are matched by Virtue name (e.g. Charity ↔ "The Twins").
+  KIM is authoritative on bond level: whenever a Virtue ranks up, the character
+  sheet's `currentLevel` is edited automatically, and the contact list refreshes
+  live when a bond is added or its level changes on the sheet. Players with no
+  linked sheet or no started bonds get a clear empty-state message.
+- **HQ Console window** (⚙ HQ in the contacts footer) for the deep meta the old
+  grid used to own: codename, X2 mod, Gate user, Covert/CAT counts, manual HQ
+  stock, plus the next-haul/bond readout and a Wipe Dossier control. Codename in
+  the contacts footer is now read-only (edit it here).
+- **Live sync.** KIM windows re-render automatically when the viewed dossier
+  changes anywhere — a GM editing a player, or the player's own second client —
+  via `updateUser`/`updateActor` hooks, with proper teardown when the desktop closes.
+- **Classic grid retired.** All affinity/bond/contraband/quirk logic is reused
+  as-is; only the view layer changed. The standalone dossier grid is gone —
+  `game.cainCardinalVirtuoso.open()` now opens the KIM desktop.
+
 ## 1.4.0 — Phase 4: KIM chat client
 - **It's a chat now.** The tracker is reimagined as *KIM* (Kinda Important
   Messages) — a Warframe-1999 / MSN-style messenger. Each virtue is a contact.
@@ -21,9 +41,6 @@
   - *Dead Drop* — a dedicated contraband window: pick a recipient + package type,
     see live HQ stock and recent drops, send. Reachable from DROP.EXE on the
     desktop/Start menu, the contacts footer, or a contact's profile.
-- **Rules unchanged.** All affinity/bond/contraband/quirk logic is reused as-is;
-  only the view layer changed. The classic grid (`game.cainCardinalVirtuoso.open()`)
-  still works as a macro fallback for deep admin/meta editing.
 - KIM.EXE replaces DOSSIER.EXE on the desktop and Start menu.
 
 ## 1.3.0 — Phase 3: Virtue Portraits

@@ -9,7 +9,8 @@ import {
   getDossier, setDossier, wirePortraits,
   applyConversation, applyContraband, applyQuirk, applyAdjustment,
   toggleBond, endMission, timeOff, pushChat,
-  rankRequirement, bondedCount, bondSlotsAllowed
+  rankRequirement, bondedCount, bondSlotsAllowed,
+  contrabandHaul, blankDossier, foundryConfirm
 } from "./cardinal-virtuoso.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
@@ -38,21 +39,107 @@ function relStatus(slot) {
 
 function convCap(d) { return d.x2mod ? RULES.conv.perMissionX2 : RULES.conv.perMission; }
 
+/* Match a CAIN bond item name (e.g. "Charity") to a module virtue key. */
+function virtueKeyByName(name) {
+  if (!name) return null;
+  const n = String(name).trim().toLowerCase();
+  return Object.keys(VIRTUES).find(k => VIRTUES[k].name.toLowerCase() === n) ?? null;
+}
+
+/* The compendium Item id that a CAIN bond entry's bondId points at. */
+function bondSourceId(item) {
+  const src = item?._stats?.compendiumSource ?? item?.flags?.core?.sourceId ?? "";
+  return String(src).split(".").pop();
+}
+
+/* Read a linked CAIN character actor's started bonds → { virtueKey: currentLevel }.
+   CAIN stores levels in actor.system.bonds[{bondId, currentLevel}]; each bondId
+   resolves to an embedded `bond` item whose name maps to one of our virtues. */
+function actorBondLevels(actor) {
+  const out = {};
+  const bonds = actor?.system?.bonds;
+  if (!Array.isArray(bonds)) return out;
+  const items = Array.from(actor.items ?? []).filter(it => it.type === "bond");
+  for (const b of bonds) {
+    const item = items.find(it => bondSourceId(it) === b.bondId)
+      ?? items.find(it => virtueKeyByName(it.name));
+    const key = item ? virtueKeyByName(item.name) : null;
+    if (key) out[key] = Math.max(0, Math.min(3, Number(b.currentLevel) || 0));
+  }
+  return out;
+}
+
 export class KimController {
   constructor(wm, targetUserId) {
     this.wm = wm;
     this.targetUserId = targetUserId ?? game.user.id;
     this._open = new Set();   // KIM window ids currently open
+    // Live-sync: re-render open windows when the viewed dossier flag changes
+    // anywhere (GM editing a player, the player's own second client, etc.).
+    this._onUpdateUser = (user, changes) => {
+      if (user.id !== this.targetUserId) return;
+      if (!foundry.utils.hasProperty(changes, `flags.${MOD}.dossier`)) return;
+      this.refresh();
+    };
+    Hooks.on("updateUser", this._onUpdateUser);
+    // Also re-render when the linked CAIN character changes (new bond started,
+    // currentLevel edited on the sheet) so the contact list stays current.
+    this._onUpdateActor = (actor) => {
+      if (actor.id && actor.id === this.targetActor?.id) this.refresh();
+    };
+    Hooks.on("updateActor", this._onUpdateActor);
+  }
+
+  teardown() {
+    if (this._onUpdateUser) Hooks.off("updateUser", this._onUpdateUser);
+    if (this._onUpdateActor) Hooks.off("updateActor", this._onUpdateActor);
+    this._onUpdateUser = null;
+    this._onUpdateActor = null;
   }
 
   get targetUser() { return game.users.get(this.targetUserId) ?? game.user; }
+  get targetActor() { return this.targetUser?.character ?? null; }
   canWrite() { return game.user.isGM || this.targetUserId === game.user.id; }
+
+  /* Which virtues the viewer sees: players see only their character's started
+     bonds; the GM keeps full access to all 9 for admin. */
+  bondInfo() {
+    const actor = this.targetActor;
+    const levels = actorBondLevels(actor);
+    return { actor, levels, bondedKeys: new Set(Object.keys(levels)) };
+  }
+  visibleEntries(bondedKeys) {
+    const all = Object.entries(VIRTUES);
+    return game.user.isGM ? all : all.filter(([k]) => bondedKeys.has(k));
+  }
+
+  /* KIM is authoritative: push each virtue's current rank to the linked CAIN
+     character's bond currentLevel, so the sheet edits itself as bonds grow. */
+  async syncActorBonds(d) {
+    const actor = this.targetActor;
+    const bonds = actor?.system?.bonds;
+    if (!Array.isArray(bonds) || !bonds.length) return;
+    const items = Array.from(actor.items ?? []).filter(it => it.type === "bond");
+    let changed = false;
+    const next = bonds.map(b => {
+      const item = items.find(it => bondSourceId(it) === b.bondId);
+      const key = item ? virtueKeyByName(item.name) : null;
+      if (!key) return b;
+      const level = Math.max(0, Math.min(3, d.virtues[key]?.rank ?? 0));
+      if (level !== b.currentLevel) { changed = true; return { ...b, currentLevel: level }; }
+      return b;
+    });
+    if (!changed) return;
+    try { await actor.update({ "system.bonds": next }); }
+    catch (e) { console.warn(`${MOD} | could not sync bond levels to actor`, e); }
+  }
 
   /* ── context builders ── */
   contactsCtx() {
     const d = getDossier(this.targetUser);
-    const contacts = Object.entries(VIRTUES).map(([key, v]) => {
-      const slot = d.virtues[key];
+    const { actor, bondedKeys } = this.bondInfo();
+    const contacts = this.visibleEntries(bondedKeys).map(([key, v]) => {
+      const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
       const st = relStatus(slot);
       return {
         key, name: v.name, epithet: v.epithet, glyph: v.glyph,
@@ -66,7 +153,9 @@ export class KimController {
       isGM: game.user.isGM, canWrite: this.canWrite(),
       mission: d.mission, codename: d.codename, hqStock: d.hqStock, x2mod: d.x2mod,
       bondsUsed: bondedCount(d), bondsAllowed: bondSlotsAllowed(d),
-      contacts
+      contacts,
+      noCharacter: !game.user.isGM && !actor,
+      noBonds: !game.user.isGM && !!actor && bondedKeys.size === 0
     };
     if (game.user.isGM) {
       ctx.allUsers = game.users.filter(u => !u.isGM).map(u => ({
@@ -79,7 +168,8 @@ export class KimController {
   profileCtx(key) {
     const d = getDossier(this.targetUser);
     const v = VIRTUES[key];
-    const slot = d.virtues[key];
+    const { bondedKeys } = this.bondInfo();
+    const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
     const st = relStatus(slot);
     return {
       key, name: v.name, epithet: v.epithet, glyph: v.glyph, portrait: portraitPath(key, v),
@@ -99,8 +189,9 @@ export class KimController {
 
   contrabandCtx(selectedKey) {
     const d = getDossier(this.targetUser);
-    const contacts = Object.entries(VIRTUES).map(([key, v]) => {
-      const slot = d.virtues[key];
+    const { bondedKeys } = this.bondInfo();
+    const contacts = this.visibleEntries(bondedKeys).map(([key, v]) => {
+      const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
       return { key, name: v.name, status: relStatus(slot).label, bonded: slot.bonded, selected: key === selectedKey };
     });
     return {
@@ -108,6 +199,19 @@ export class KimController {
       hqStock: d.hqStock, hqCap: RULES.contraband.hqCap,
       contacts,
       drops: [...d.log].reverse().filter(l => l.includes("Contraband")).slice(0, 12)
+    };
+  }
+
+  hqCtx() {
+    const d = getDossier(this.targetUser);
+    return {
+      canWrite: this.canWrite(), isGM: game.user.isGM,
+      codename: d.codename, mission: d.mission,
+      x2mod: d.x2mod, gateUser: d.gateUser,
+      covert: d.covert, cat: d.cat,
+      hqStock: d.hqStock, hqCap: RULES.contraband.hqCap,
+      nextHaul: contrabandHaul(d),
+      bondsUsed: bondedCount(d), bondsAllowed: bondSlotsAllowed(d)
     };
   }
 
@@ -161,6 +265,17 @@ export class KimController {
     });
   }
 
+  async openHQ() {
+    const id = "kim-hq";
+    const html = await renderTpl(T("kim-hq.hbs"), this.hqCtx());
+    this._open.add(id);
+    this.wm.open(id, {
+      title: "HQ Console", icon: "⚙", width: 320, height: 480,
+      html, onBody: (b) => this.wireHQ(b),
+      onClose: () => this._open.delete(id)
+    });
+  }
+
   async openConv(key) {
     const id = `kim-conv-${key}`;
     const html = await renderTpl(T("kim-conversation.hbs"), this.convCtx(key));
@@ -181,6 +296,8 @@ export class KimController {
       } else if (id.startsWith("kim-profile-")) {
         const key = id.slice("kim-profile-".length);
         this.wm.setHtml(id, await renderTpl(T("kim-profile.hbs"), this.profileCtx(key)), (b) => this.wireProfile(b));
+      } else if (id === "kim-hq") {
+        this.wm.setHtml(id, await renderTpl(T("kim-hq.hbs"), this.hqCtx()), (b) => this.wireHQ(b));
       } else if (id === "kim-contraband") {
         const body = this.wm.bodyEl(id);
         const selKey = body?.querySelector('select[name="dropVirtue"]')?.value;
@@ -206,6 +323,7 @@ export class KimController {
   async commit(d, r) {
     if (r && r.ok === false) { ui.notifications.warn(r.msg); return false; }
     await setDossier(this.targetUser, d);
+    await this.syncActorBonds(d);
     if (r?.msg) ui.notifications.info(r.msg);
     await this.refresh();
     return true;
@@ -228,8 +346,8 @@ export class KimController {
       openChat:   (ev, el) => this.openConv(el.dataset.virtue),
       openProfile:(ev, el) => { ev.stopPropagation(); this.openProfile(el.dataset.virtue); },
       pickUser:   (ev, el) => this.onPickUser(el.value),
-      saveMeta:   (ev, el, b) => this.onSaveMeta(b),
       openDrop:   () => this.openContraband(),
+      openHQ:     () => this.openHQ(),
       endMission: () => this.onEndMission(),
       timeOff:    () => this.onTimeOff()
     });
@@ -238,6 +356,13 @@ export class KimController {
   wireContraband(body) {
     this._delegate(body, {
       drop: (ev, el, b) => this.onDrop(b)
+    });
+  }
+
+  wireHQ(body) {
+    this._delegate(body, {
+      saveHQ: (ev, el, b) => this.onSaveHQ(b),
+      reset:  () => this.onResetDossier()
     });
   }
 
@@ -334,6 +459,7 @@ export class KimController {
     const d = getDossier(this.targetUser);
     const { ups, haul } = endMission(d);
     await setDossier(this.targetUser, d);
+    await this.syncActorBonds(d);
     ui.notifications.info(ups.length
       ? `Mission closed. Rank-ups: ${ups.join(", ")}. Haul +${haul}.`
       : `Mission closed. No rank-ups. Haul +${haul}.`);
@@ -346,11 +472,27 @@ export class KimController {
     await this.commit(d, timeOff(d));
   }
 
-  async onSaveMeta(body) {
+  async onSaveHQ(body) {
     if (!this.canWrite()) return ui.notifications.warn("No clearance.");
     const d = getDossier(this.targetUser);
-    const v = body.querySelector('input[name="codename"]')?.value;
-    if (v != null) d.codename = v;
-    await this.commit(d, { ok: true, msg: "Codename saved." });
+    const codename = body.querySelector('input[name="codename"]')?.value;
+    if (codename != null) d.codename = codename;
+    d.x2mod = !!body.querySelector('input[name="x2mod"]')?.checked;
+    d.gateUser = !!body.querySelector('input[name="gateUser"]')?.checked;
+    const num = (name, max, cur) => {
+      const n = parseInt(body.querySelector(`input[name="${name}"]`)?.value ?? cur, 10);
+      return Math.max(0, Math.min(max, isNaN(n) ? 0 : n));
+    };
+    d.covert = num("covert", 9, d.covert);
+    d.cat = num("cat", 9, d.cat);
+    d.hqStock = num("hqStock", RULES.contraband.hqCap, d.hqStock);
+    await this.commit(d, { ok: true, msg: "HQ console saved." });
+  }
+
+  async onResetDossier() {
+    if (!this.canWrite()) return ui.notifications.warn("No clearance.");
+    const ok = await foundryConfirm("Wipe this dossier? This cannot be undone.");
+    if (!ok) return;
+    await this.commit(blankDossier(), { ok: true, msg: "Dossier wiped." });
   }
 }

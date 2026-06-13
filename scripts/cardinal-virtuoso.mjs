@@ -1,4 +1,4 @@
-import { VIRTUES, RULES, RANK_FLAVOR } from "./data.mjs";
+import { VIRTUES, RULES } from "./data.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
 const FLAG = "dossier";
@@ -19,7 +19,7 @@ function blankSlot() {
   };
 }
 
-function blankDossier() {
+export function blankDossier() {
   const virtues = {};
   for (const k of Object.keys(VIRTUES)) virtues[k] = blankSlot();
   return {
@@ -264,48 +264,8 @@ export function timeOff(d) {
 }
 
 /* ----------------------------------------------------------------------------
- * APPLICATION (ApplicationV2 when available, else legacy Application)
+ * VIEW HELPERS (shared with the KIM client)
  * -------------------------------------------------------------------------- */
-
-const AppV2 = foundry.applications?.api?.ApplicationV2;
-const Handlebars2 = foundry.applications?.api?.HandlebarsApplicationMixin;
-
-function buildContext(user, isGM) {
-  const d = getDossier(user);
-  const virtues = Object.entries(VIRTUES).map(([key, v]) => {
-    const slot = d.virtues[key];
-    // Convention: img/virtues/<key>.webp is used automatically; `portrait` in
-    // data.mjs is an optional override. Missing files fall back to the glyph at
-    // render time (see wirePortraits), so this path is always set.
-    const portraitPath = `modules/${MOD}/${v.portrait || `img/virtues/${key}.webp`}`;
-    return {
-      key, ...v,
-      portrait: portraitPath,
-      ...slot,
-      reqNext: slot.rank < 3 ? rankRequirement(slot, slot.rank + 1) : null,
-      qualified: qualifiedRank(slot),
-      bondText: v.bonds[slot.rank] ?? "",
-      rankFlavor: RANK_FLAVOR[slot.rank] ?? "",
-      broken: slot.pendingBreak,
-      quirks: (v.quirks ?? []).map((q, i) => ({
-        ...q, index: i,
-        deltaStr: `${q.delta >= 0 ? "+" : ""}${q.delta}`,
-        good: q.delta >= 0,
-        used: slot.quirkUses[i] ?? 0
-      }))
-    };
-  });
-  return {
-    isGM, user: { id: user.id, name: user.name },
-    codename: d.codename, mission: d.mission, x2mod: d.x2mod, gateUser: d.gateUser,
-    covert: d.covert, cat: d.cat, hqStock: d.hqStock,
-    convCap: convCap(d), contraCap: contraCap(d),
-    bondsUsed: bondedCount(d), bondsAllowed: bondSlotsAllowed(d),
-    nextHaul: contrabandHaul(d),
-    log: [...d.log].reverse(),
-    virtues
-  };
-}
 
 /* Reveal each portrait only once its file actually loads; drop the <img> on
    error so the glyph placeholder shows through. Handles images already cached
@@ -320,198 +280,7 @@ export function wirePortraits(root) {
   });
 }
 
-let CardinalApp;
-
-const ACTIONS = () => ({
-  toggleBond: CardinalApp_onToggleBond,
-  conv: CardinalApp_onConv,
-  contra: CardinalApp_onContra,
-  quirk: CardinalApp_onQuirk,
-  adjust: CardinalApp_onAdjust,
-  endMission: CardinalApp_onEndMission,
-  timeOff: CardinalApp_onTimeOff,
-  saveMeta: CardinalApp_onSaveMeta,
-  reset: CardinalApp_onReset,
-  pickUser: CardinalApp_onPickUser
-});
-
-if (AppV2 && Handlebars2) {
-  CardinalApp = class extends Handlebars2(AppV2) {
-    static DEFAULT_OPTIONS = {
-      id: "cain-cardinal-virtuoso-app",
-      classes: ["cv-app"],
-      tag: "div",
-      window: { title: "CARDINAL VIRTUOSO // SEER-TEMERITY", resizable: true, icon: "fa-solid fa-cross" },
-      position: { width: 720, height: 760 },
-      actions: ACTIONS()
-    };
-    static PARTS = { body: { template: `modules/${MOD}/templates/dossier.hbs` } };
-
-    constructor(options = {}) {
-      super(options);
-      this.targetUserId = options.targetUserId ?? game.user.id;
-    }
-    get targetUser() { return game.users.get(this.targetUserId) ?? game.user; }
-
-    async _prepareContext() {
-      const ctx = buildContext(this.targetUser, game.user.isGM);
-      if (game.user.isGM) {
-        ctx.allUsers = game.users.filter(u => !u.isGM).map(u => ({
-          id: u.id, name: u.name, active: u.active, selected: u.id === this.targetUserId
-        }));
-      }
-      return ctx;
-    }
-
-    _onRender(context, options) {
-      super._onRender?.(context, options);
-      const root = this.element;
-      wirePortraits(root);
-      const sel = root.querySelector('[data-action="pickUser"]');
-      if (sel) sel.addEventListener("change", (ev) => CardinalApp_onPickUser.call(this, ev, ev.currentTarget));
-    }
-  };
-} else {
-  // Legacy fallback (v11/early v12)
-  CardinalApp = class extends Application {
-    static get defaultOptions() {
-      return foundry.utils.mergeObject(super.defaultOptions, {
-        id: "cain-cardinal-virtuoso-app",
-        classes: ["cv-app"],
-        title: "CARDINAL VIRTUOSO // SEER-TEMERITY",
-        template: `modules/${MOD}/templates/dossier.hbs`,
-        width: 720, height: 760, resizable: true
-      });
-    }
-    constructor(options = {}) { super(options); this.targetUserId = options.targetUserId ?? game.user.id; }
-    get targetUser() { return game.users.get(this.targetUserId) ?? game.user; }
-    getData() {
-      const ctx = buildContext(this.targetUser, game.user.isGM);
-      if (game.user.isGM) ctx.allUsers = game.users.filter(u => !u.isGM)
-        .map(u => ({ id: u.id, name: u.name, active: u.active, selected: u.id === this.targetUserId }));
-      return ctx;
-    }
-    activateListeners(html) {
-      super.activateListeners(html);
-      const root = html[0] ?? html;
-      wirePortraits(root);
-      const map = ACTIONS();
-      root.querySelectorAll("[data-action]").forEach(el => {
-        const evt = el.tagName === "SELECT" ? "change" : "click";
-        el.addEventListener(evt, ev => map[el.dataset.action]?.call(this, ev, el));
-      });
-    }
-  };
-}
-
-/* shared permission guard: can the current user write the target's dossier? */
-function canWrite(app) {
-  return game.user.isGM || app.targetUserId === game.user.id;
-}
-async function persist(app, dossier, note) {
-  await setDossier(app.targetUser, dossier);
-  if (note) ui.notifications.info(note);
-  app.render(false);
-}
-function appRoot(app) { return app.element?.[0] ?? app.element; }
-
-/* ---- action handlers ---- */
-async function CardinalApp_onToggleBond(ev, target) {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const vkey = target.dataset.virtue;
-  const d = getDossier(this.targetUser);
-  const r = toggleBond(d, vkey, {
-    isGM: game.user.isGM,
-    enforcePacing: game.settings.get(MOD, "enforcePacing")
-  });
-  if (!r.ok) return ui.notifications.warn(r.msg);
-  await persist(this, d, r.msg);
-}
-async function CardinalApp_onConv(ev, target) {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const vkey = target.dataset.virtue;
-  const box = appRoot(this).querySelector(`.cv-conv-checks[data-virtue="${vkey}"]`);
-  const get = (n) => !!box?.querySelector(`input[data-cv="${n}"]`)?.checked;
-  const topicLike = get("topic"), topicDislike = get("dislike");
-  const d = getDossier(this.targetUser);
-  const r = applyConversation(d, vkey, {
-    topicHit: topicDislike ? "dislike" : (topicLike ? "like" : null),
-    goodTalk: get("good"), connectionHit: get("conn")
-  });
-  if (!r.ok) return ui.notifications.warn(r.msg);
-  await persist(this, d, r.msg);
-}
-async function CardinalApp_onContra(ev, target) {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const vkey = target.dataset.virtue;
-  const d = getDossier(this.targetUser);
-  const r = applyContraband(d, vkey, target.dataset.kind);
-  if (!r.ok) return ui.notifications.warn(r.msg);
-  await persist(this, d, r.msg);
-}
-async function CardinalApp_onQuirk(ev, target) {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const vkey = target.dataset.virtue;
-  const d = getDossier(this.targetUser);
-  const r = applyQuirk(d, vkey, Number(target.dataset.q));
-  if (!r.ok) return ui.notifications.warn(r.msg);
-  await persist(this, d, r.msg);
-}
-async function CardinalApp_onAdjust(ev, target) {
-  if (!game.user.isGM) return ui.notifications.warn("No clearance.");
-  const vkey = target.dataset.virtue;
-  const input = appRoot(this).querySelector(`input[name="adj-${vkey}"]`);
-  const delta = parseInt(input?.value, 10) || 0;
-  const d = getDossier(this.targetUser);
-  const r = applyAdjustment(d, vkey, delta);
-  if (!r.ok) return ui.notifications.warn(r.msg);
-  await persist(this, d, r.msg);
-}
-async function CardinalApp_onEndMission() {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const d = getDossier(this.targetUser);
-  const { ups, haul } = endMission(d);
-  const note = ups.length
-    ? `Mission closed. Rank-ups: ${ups.join(", ")}. Contraband haul +${haul}.`
-    : `Mission closed. No rank-ups. Contraband haul +${haul}.`;
-  await persist(this, d, note);
-}
-async function CardinalApp_onTimeOff() {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const d = getDossier(this.targetUser);
-  const r = timeOff(d);
-  if (!r.ok) return ui.notifications.warn(r.msg);
-  await persist(this, d, r.msg);
-}
-async function CardinalApp_onSaveMeta(ev, target) {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const root = appRoot(this);
-  const d = getDossier(this.targetUser);
-  d.codename = root.querySelector('[name="codename"]')?.value ?? d.codename;
-  d.x2mod = root.querySelector('[name="x2mod"]')?.checked ?? d.x2mod;
-  d.gateUser = root.querySelector('[name="gateUser"]')?.checked ?? d.gateUser;
-  const num = (name, max, cur) => {
-    const n = parseInt(root.querySelector(`[name="${name}"]`)?.value ?? cur, 10);
-    return Math.max(0, Math.min(max, isNaN(n) ? 0 : n));
-  };
-  d.covert = num("covert", 9, d.covert);
-  d.cat = num("cat", 9, d.cat);
-  d.hqStock = num("hqStock", RULES.contraband.hqCap, d.hqStock);
-  await persist(this, d, "Dossier metadata saved.");
-}
-async function CardinalApp_onReset() {
-  if (!canWrite(this)) return ui.notifications.warn("No clearance.");
-  const ok = await foundryConfirm("Wipe this dossier? This cannot be undone.");
-  if (!ok) return;
-  await persist(this, blankDossier(), "Dossier wiped.");
-}
-async function CardinalApp_onPickUser(ev, target) {
-  if (!game.user.isGM) return;
-  this.targetUserId = target.value;
-  this.render(false);
-}
-
-async function foundryConfirm(content) {
+export async function foundryConfirm(content) {
   const D = foundry.applications?.api?.DialogV2;
   if (D) return D.confirm({ window: { title: "Confirm" }, content });
   return Dialog.confirm({ title: "Confirm", content });
@@ -543,8 +312,8 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
   parseRankReq(game.settings.get(MOD, "rankReq"));
   game.cainCardinalVirtuoso ??= {};
-  game.cainCardinalVirtuoso.open = (userId) =>
-    new CardinalApp({ targetUserId: userId ?? game.user.id }).render(true);
+  // Legacy macro entry point now opens the KIM desktop (the standalone grid was retired in 1.4).
+  game.cainCardinalVirtuoso.open = () => game.cainCardinalVirtuoso.openDesktop?.();
   console.log(`${MOD} | ready`);
 });
 
@@ -565,5 +334,3 @@ Hooks.on("getSceneControlButtons", (controls) => {
     if (token) { token.tools ??= {}; token.tools["cardinal-virtuoso"] = tool; }
   }
 });
-
-export { CardinalApp };

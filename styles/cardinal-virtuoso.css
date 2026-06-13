@@ -616,3 +616,25 @@
   background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
               inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
 .cv-kim-drop-log .cv-kim-notes { max-height: none; flex: 1; }
+
+/* ── HQ Console window ────────────────────────────────────── */
+.cv-kim-hq { display: flex; flex-direction: column; height: 100%; gap: 6px; }
+.cv-kim-hq-form { display: flex; flex-direction: column; gap: 6px; padding: 6px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-kim-hq-row { display: flex; align-items: center; gap: 6px; }
+.cv-kim-hq-row > label { font-size: 10px; font-weight: bold; color: var(--text-dim); }
+.cv-kim-hq-row input[type="text"] { flex: 1; font-family: var(--sys); font-size: 11px; }
+.cv-kim-hq-check label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: normal; color: var(--text); }
+.cv-kim-hq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cv-kim-hq-cell { display: flex; flex-direction: column; gap: 2px; }
+.cv-kim-hq-cell label { font-size: 9px; font-weight: bold; color: var(--text-dim); }
+.cv-kim-hq-cell input { font-family: var(--sys); font-size: 11px; width: 100%; }
+.cv-kim-hq-readout { display: flex; justify-content: space-between; font-size: 10px;
+  font-weight: bold; color: var(--text-dim); padding: 2px 1px; }
+.cv-kim-hq-actions { display: flex; gap: 6px; margin-top: 2px; }
+.cv-kim-hq-actions .cv-btn { flex: 1; }
+
+/* Empty contact list (no linked character / no started bonds) */
+.cv-kim-empty-state { font-size: 10px; color: var(--text-dim); line-height: 1.5;
+  padding: 8px 6px; text-align: center; font-style: italic; }
