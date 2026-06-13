@@ -9,7 +9,7 @@
       <span class="cv-kim-conv-name">{{name}}</span>
       <span class="cv-kim-conv-status cv-kim-st-{{statusClass}}">{{status}}</span>
     </span>
-    <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="Profile">▤</button>
+    <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="{{localize 'cain-cardinal-virtuoso.kim.profile'}}">▤</button>
   </div>
 
   <div class="cv-kim-msgs">
@@ -19,29 +19,29 @@
       <span class="cv-msg-text">{{text}}</span>
     </div>
     {{else}}
-    <div class="cv-kim-empty">Start a conversation — type below.</div>
+    <div class="cv-kim-empty">{{localize 'cain-cardinal-virtuoso.conv.startConv'}}</div>
     {{/each}}
   </div>
 
   {{#if canWrite}}
   <div class="cv-kim-compose">
     <select class="cv-msg-as" name="msgAs">
-      <option value="op">You</option>
+      <option value="op">{{localize 'cain-cardinal-virtuoso.conv.you'}}</option>
       <option value="virtue">{{name}}</option>
     </select>
-    <input type="text" name="msg" placeholder="Type a message…" autocomplete="off" />
-    <button type="button" class="cv-btn" data-action="send" data-virtue="{{key}}">Send</button>
+    <input type="text" name="msg" placeholder="{{localize 'cain-cardinal-virtuoso.conv.typeMsg'}}" autocomplete="off" />
+    <button type="button" class="cv-btn" data-action="send" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.conv.send'}}</button>
   </div>
 
   <div class="cv-kim-marks">
-    <div class="cv-kim-marks-lbl">End-of-talk · Conversation <small>({{convUsed}}/{{convCap}})</small></div>
+    <div class="cv-kim-marks-lbl">{{localize 'cain-cardinal-virtuoso.conv.endOfTalk'}} <small>({{convUsed}}/{{convCap}})</small></div>
     <div class="cv-conv-checks" data-virtue="{{key}}">
-      <label><input type="checkbox" data-cv="topic" /> Liked topic +2</label>
-      <label><input type="checkbox" data-cv="dislike" /> Disliked topic −2</label>
-      <label><input type="checkbox" data-cv="good" /> Went well +2</label>
-      <label><input type="checkbox" data-cv="conn" /> Connection +2</label>
+      <label><input type="checkbox" data-cv="topic" /> {{localize 'cain-cardinal-virtuoso.conv.likedTopic'}} +2</label>
+      <label><input type="checkbox" data-cv="dislike" /> {{localize 'cain-cardinal-virtuoso.conv.dislikedTopic'}} −2</label>
+      <label><input type="checkbox" data-cv="good" /> {{localize 'cain-cardinal-virtuoso.conv.wentWell'}} +2</label>
+      <label><input type="checkbox" data-cv="conn" /> {{localize 'cain-cardinal-virtuoso.conv.connection'}} +2</label>
     </div>
-    <button type="button" class="cv-btn cv-btn-on" data-action="conv" data-virtue="{{key}}">Mark conversation</button>
+    <button type="button" class="cv-btn cv-btn-on" data-action="conv" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.conv.markConv'}}</button>
   </div>
   {{/if}}
 

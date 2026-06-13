@@ -1,0 +1,68 @@
+<div class="cv-kim cv-kim-tracker">
+
+  <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.track.heading'}}</div>
+
+  {{#if noCharacter}}
+  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.kim.noCharacter'}}</div>
+  {{else if noBonds}}
+  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.kim.noBonds'}}</div>
+  {{/if}}
+
+  {{#each bonds}}
+  <div class="cv-trk-card {{#if broken}}cv-kim-broken{{/if}}">
+
+    <div class="cv-trk-head">
+      <span class="cv-kim-av">
+        <span class="cv-kim-av-glyph">{{glyph}}</span>
+        <img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />
+      </span>
+      <span class="cv-trk-id">
+        <span class="cv-kim-c-name">{{name}} <em>{{epithet}}</em></span>
+        <span class="cv-kim-c-meta">{{localize 'cain-cardinal-virtuoso.prof.affinity'}} {{affinity}} · {{localize 'cain-cardinal-virtuoso.prof.bond'}} {{rank}}</span>
+      </span>
+      <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="{{localize 'cain-cardinal-virtuoso.kim.profile'}}">▤</button>
+    </div>
+
+    <div class="cv-trk-label">{{localize 'cain-cardinal-virtuoso.track.minTracker'}}{{#if custom}} <small class="cv-trk-custom">{{localize 'cain-cardinal-virtuoso.track.custom'}}</small>{{/if}}</div>
+    <div class="cv-trk-bar">
+      <div class="cv-trk-fill" style="width:{{affPct}}%"></div>
+      {{#each ticks}}
+      <div class="cv-trk-tick {{#if reached}}cv-trk-reached{{/if}}" style="left:{{pct}}%">
+        <span class="cv-trk-tick-num">{{rank}}</span>
+        <span class="cv-trk-tick-val">{{value}}</span>
+      </div>
+      {{/each}}
+    </div>
+
+    {{#if @root.isGM}}
+    <div class="cv-trk-edit">
+      <label>I</label><input type="number" name="req-{{key}}-1" value="{{req1}}" min="1" step="1" />
+      <label>II</label><input type="number" name="req-{{key}}-2" value="{{req2}}" min="1" step="1" />
+      <label>III</label><input type="number" name="req-{{key}}-3" value="{{req3}}" min="1" step="1" />
+      <button type="button" class="cv-btn" data-action="saveTracker" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.prof.apply'}}</button>
+    </div>
+    {{/if}}
+
+    <details class="cv-kim-p-sec">
+      <summary>{{localize 'cain-cardinal-virtuoso.track.personality'}}</summary>
+      <div class="cv-kim-intel">
+        <p><b>{{localize 'cain-cardinal-virtuoso.prof.likes'}}</b> {{#each likes}}<span class="cv-tag cv-tag-good">{{this}}</span>{{/each}}</p>
+        <p><b>{{localize 'cain-cardinal-virtuoso.prof.dislikes'}}</b> {{#each dislikes}}<span class="cv-tag cv-tag-bad">{{this}}</span>{{/each}}</p>
+        {{#if food.length}}<p><b>{{localize 'cain-cardinal-virtuoso.prof.food'}}</b> {{#each food}}<span class="cv-tag">{{this}}</span>{{/each}}</p>{{/if}}
+        {{#if blasphemy}}<p><b>{{localize 'cain-cardinal-virtuoso.prof.blasphemy'}}</b> {{blasphemy}}</p>{{/if}}
+      </div>
+    </details>
+
+    <details class="cv-kim-p-sec">
+      <summary>{{localize 'cain-cardinal-virtuoso.track.abilities'}}</summary>
+      <ul class="cv-trk-levels">
+        {{#each bondLevels}}
+        {{#if text}}<li class="{{#if current}}cv-trk-cur{{/if}}"><b>{{localize 'cain-cardinal-virtuoso.prof.bond'}} {{rank}}</b> — {{text}}</li>{{/if}}
+        {{/each}}
+      </ul>
+    </details>
+
+  </div>
+  {{/each}}
+
+</div>

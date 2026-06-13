@@ -13,9 +13,9 @@
   </div>
 
   <div class="cv-kim-p-aff">
-    <span class="cv-kim-aff-num">Affinity {{affinity}}</span>
-    <span class="cv-kim-aff-rank">Bond {{rank}}</span>
-    {{#if reqNext}}<span class="cv-kim-aff-next">(next: {{reqNext}})</span>{{/if}}
+    <span class="cv-kim-aff-num">{{localize 'cain-cardinal-virtuoso.prof.affinity'}} {{affinity}}</span>
+    <span class="cv-kim-aff-rank">{{localize 'cain-cardinal-virtuoso.prof.bond'}} {{rank}}</span>
+    {{#if reqNext}}<span class="cv-kim-aff-next">({{localize 'cain-cardinal-virtuoso.prof.next'}}: {{reqNext}})</span>{{/if}}
   </div>
 
   {{#if bondText}}<div class="cv-kim-p-bond">{{bondText}}</div>{{/if}}
@@ -23,32 +23,32 @@
   <div class="cv-kim-p-actions">
     {{#if canWrite}}
     <button type="button" class="cv-btn {{#if bonded}}cv-btn-on{{/if}}" data-action="toggleBond" data-virtue="{{key}}">
-      {{#if bonded}}Remove contact{{else}}Add contact{{/if}}
+      {{#if bonded}}{{localize 'cain-cardinal-virtuoso.prof.removeContact'}}{{else}}{{localize 'cain-cardinal-virtuoso.prof.addContact'}}{{/if}}
     </button>
     {{/if}}
   </div>
 
   <details class="cv-kim-p-sec" open>
-    <summary>INTEL</summary>
+    <summary>{{localize 'cain-cardinal-virtuoso.prof.intel'}}</summary>
     <div class="cv-kim-intel">
-      <p><b>Likes:</b> {{#each likes}}<span class="cv-tag cv-tag-good">{{this}}</span>{{/each}}</p>
-      <p><b>Dislikes:</b> {{#each dislikes}}<span class="cv-tag cv-tag-bad">{{this}}</span>{{/each}}</p>
-      {{#if food.length}}<p><b>Food:</b> {{#each food}}<span class="cv-tag">{{this}}</span>{{/each}}</p>{{/if}}
-      {{#if blasphemy}}<p><b>Blasphemy:</b> {{blasphemy}}</p>{{/if}}
+      <p><b>{{localize 'cain-cardinal-virtuoso.prof.likes'}}</b> {{#each likes}}<span class="cv-tag cv-tag-good">{{this}}</span>{{/each}}</p>
+      <p><b>{{localize 'cain-cardinal-virtuoso.prof.dislikes'}}</b> {{#each dislikes}}<span class="cv-tag cv-tag-bad">{{this}}</span>{{/each}}</p>
+      {{#if food.length}}<p><b>{{localize 'cain-cardinal-virtuoso.prof.food'}}</b> {{#each food}}<span class="cv-tag">{{this}}</span>{{/each}}</p>{{/if}}
+      {{#if blasphemy}}<p><b>{{localize 'cain-cardinal-virtuoso.prof.blasphemy'}}</b> {{blasphemy}}</p>{{/if}}
     </div>
   </details>
 
   {{#if canWrite}}
   <details class="cv-kim-p-sec">
-    <summary>CONTRABAND</summary>
+    <summary>{{localize 'cain-cardinal-virtuoso.prof.contraband'}}</summary>
     <div class="cv-kim-contra">
-      <button type="button" class="cv-btn cv-btn-on" data-action="openDrop" data-virtue="{{key}}">📦 Open Dead Drop…</button>
+      <button type="button" class="cv-btn cv-btn-on" data-action="openDrop" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.prof.openDrop'}}</button>
     </div>
   </details>
 
   {{#if quirks.length}}
   <details class="cv-kim-p-sec">
-    <summary>QUIRKS</summary>
+    <summary>{{localize 'cain-cardinal-virtuoso.prof.quirks'}}</summary>
     <div class="cv-kim-quirks">
       {{#each quirks}}
       <button type="button" class="cv-btn cv-quirk {{#if good}}cv-btn-good{{else}}cv-btn-bad{{/if}}"
@@ -63,17 +63,17 @@
 
   {{#if isGM}}
   <div class="cv-kim-p-adj">
-    <label>Admin ±</label>
+    <label>{{localize 'cain-cardinal-virtuoso.prof.adminAdj'}}</label>
     <input type="number" name="adj-{{key}}" value="0" step="1" />
-    <button type="button" class="cv-btn" data-action="adjust" data-virtue="{{key}}">Apply</button>
+    <button type="button" class="cv-btn" data-action="adjust" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.prof.apply'}}</button>
   </div>
   {{/if}}
   {{/if}}
 
   <details class="cv-kim-p-sec" open>
-    <summary>NOTES</summary>
+    <summary>{{localize 'cain-cardinal-virtuoso.prof.notes'}}</summary>
     <ul class="cv-kim-notes">
-      {{#each notes}}<li>{{this}}</li>{{else}}<li class="cv-kim-empty">No history yet.</li>{{/each}}
+      {{#each notes}}<li>{{this}}</li>{{else}}<li class="cv-kim-empty">{{localize 'cain-cardinal-virtuoso.prof.noHistory'}}</li>{{/each}}
     </ul>
   </details>
 

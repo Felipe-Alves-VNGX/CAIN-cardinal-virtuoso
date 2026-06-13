@@ -196,6 +196,49 @@ export const VIRTUES = {
   }
 };
 
+// Additional Gifts & Guides — regulated objects bought with scrip (XSX) and
+// "dropped" on a VIRTUE from the player's inventory. Each is created as a CAIN
+// `item` in the module's gift compendium, tagged with flag gift:<key>.
+//   cost: scrip value (XSX) shown on the card.
+//   effect.kind:
+//     flat            — affinity += base (+ freshBonus when given "fresh").
+//     rankOrPlus      — bump bond a rank if affinity already qualifies, else +plus.
+//     buffConversation— next Meet-Up ignores a Disliked topic (+1D connection).
+//     buffApology     — softens upcoming affinity losses (first −2, then −1).
+//     buffJournal     — first affinity-lowering action each mission warns first.
+export const GIFTS = {
+  heartfeltNote: {
+    name: "Heartfelt Note", cost: 2, glyph: "✉",
+    desc: "Give to a VIRTUE to automatically increase your Bond if your current affinity already meets the next bond's minimum. If it would not increase your bond, increase Affinity by +1 instead.",
+    effect: { kind: "rankOrPlus", plus: 1 }
+  },
+  pageOneLiners: {
+    name: "Page of One-liners", cost: 1, glyph: "☰",
+    desc: "A page from “101-Liners for Suave Conversationalists”. Gain +1D on the connection roll for 1 Meet-Up and ignore losing affinity for discussing a Disliked topic. Usable once per purchase.",
+    effect: { kind: "buffConversation" }
+  },
+  apologyNote: {
+    name: "Apology Note", cost: 2, glyph: "✎",
+    desc: "When you would lose Affinity in any way, reduce the loss taken by 2 affinity. Any subsequent uses before the completion of your current or next mission only reduce loss by 1.",
+    effect: { kind: "buffApology" }
+  },
+  heatedBlanket: {
+    name: "Heated Blanket", cost: 2, glyph: "▦",
+    desc: "A gift to give or send to a Virtue to gain +2 Affinity. Gain +1 Affinity if given within 12 hours of the VIRTUE being dethawed and deployed from the SERAPH. Giftable once.",
+    effect: { kind: "flat", base: 2, freshBonus: 1 }
+  },
+  organizedJournal: {
+    name: "Well-Organized Journal", cost: 2, glyph: "❏",
+    desc: "The first time in a mission when you take an Action that would lower affinity with any VIRTUE you are bonded with, the Admin must tell you before taking that action, letting you rethink. Does not stack.",
+    effect: { kind: "buffJournal" }
+  },
+  deploymentPass: {
+    name: "5-Hour Deployment Pass", cost: 16, glyph: "★",
+    desc: "A highly sought-after pass allowing a VIRTUE under heavy monitoring to be deployed for non-mission purposes for 5 hours, with your name as the sanctioned chaperone. Usable once per purchase; gain +12 Affinity with the VIRTUE of choice.",
+    effect: { kind: "flat", base: 12 }
+  }
+};
+
 // What each bond rank means at the table (shown as a tooltip on the rank readout).
 export const RANK_FLAVOR = {
   0: "They know you exist, but the relationship is strictly professional and distant.",
@@ -203,6 +246,47 @@ export const RANK_FLAVOR = {
   2: "You kept showing up. Not just friendly — trusted. Some things go unsaid because they don't need saying.",
   3: "There is no version of you that doesn't include them anymore. They let you in, and you don't see yourself leaving."
 };
+
+/* "Special <3" achievements. `group: "good"` entries each add 1 point to the
+   party's shared Good Ending total (counted once per achievement across the
+   whole party); `group: "bad"` entries are special/bad endings tracked for
+   flavor and award no points. `auto` is a detector code resolved in the rules
+   layer; null means the GM toggles it by hand (subjective). Names/descriptions
+   stay in English by design (table flavor), like the SEER//TEMERITY brand. */
+export const ACHIEVEMENTS = [
+  { key: "justiceBond3",   name: "Judge, Jury, Sexecutioner", desc: "Reach Bond 3 with Justice.",   group: "good", auto: "bond3:justice" },
+  { key: "faithBond3",     name: "Claw Machine Pro",          desc: "Reach Bond 3 with Faith.",     group: "good", auto: "bond3:faith" },
+  { key: "charityBond3",   name: "At the Same Damn Time",     desc: "Reach Bond 3 with Charity.",   group: "good", auto: "bond3:charity" },
+  { key: "fortitudeBond3", name: "Shattered Pelvis",          desc: "Reach Bond 3 with Fortitude.", group: "good", auto: "bond3:fortitude" },
+  { key: "hopeBond3",      name: "Remember the Date",         desc: "Reach Bond 3 with Hope.",      group: "good", auto: "bond3:hope" },
+  { key: "prudenceBond3",  name: "Prenup Please",             desc: "Reach Bond 3 with Prudence.",  group: "good", auto: "bond3:prudence" },
+  { key: "chastityBond3",  name: "No Touch Please!",          desc: "Reach Bond 3 with Chastity.",  group: "good", auto: "bond3:chastity" },
+  { key: "sobrietyBond3",  name: "Glass Half Full",           desc: "Reach Bond 3 with Sobriety.",  group: "good", auto: "bond3:sobriety" },
+  { key: "absolutionBond3",name: "Walk in the Park",          desc: "Reach Bond 3 with Absolution.",group: "good", auto: "bond3:absolution" },
+  { key: "justiceFalter",  name: "This ISN'T You!",           desc: "Get Justice to falter in their dogma.", group: "good", auto: null },
+  { key: "proGamer",       name: "Pro Gamer",                 desc: "Beat Faith in a video game.",  group: "good", auto: null },
+  { key: "spoilsOfWar",    name: "Spoils of War",             desc: "Kill an upper member of CAIN Leadership while bonding to Fortitude.", group: "good", auto: null },
+  { key: "lastChristmas",  name: "Last Christmas",            desc: "Use a Deployment Pass to spend Christmas with Hope.", group: "good", auto: null },
+
+  { key: "badEnding",        name: "BAD ENDING",            desc: "Reach Bond 3 with Sobriety by only talking about or gifting alcohol.", group: "bad", auto: null },
+  { key: "heartBreaker",     name: "Heart Breaker",         desc: "Break bonds with 4 or more virtues.", group: "bad", auto: "heartBreaker" },
+  { key: "fumbler",          name: "The Fumbler",           desc: "Lose 15 or more affinity with a virtue in a single mission.", group: "bad", auto: "fumbler" },
+  { key: "nothingLovesHunter", name: "Nothing Loves the Hunter", desc: "Complete 5 missions without bonding to any virtue.", group: "bad", auto: "hunter" },
+  { key: "besoDeTres",       name: "Beso de Tres",          desc: "Reach Bond 3 with Sobriety and Prudence, or with Chastity and Faith.", group: "bad", auto: "besoDeTres" },
+  { key: "matchmaker",       name: "Matchmaker",            desc: "Somehow set up two virtues to get with each other.", group: "bad", auto: null },
+  { key: "wipeTheStain",     name: "Wipe the Stain",        desc: "End all communication with a virtue for 3 consecutive missions after breaking their bond.", group: "bad", auto: null },
+  { key: "hardmode",         name: "hardmode++",            desc: "Reach Bond 3 with a virtue while playing with Glory Unto Them's Black Coat Pillar system.", group: "bad", auto: null }
+];
+
+/* Party-wide rewards by accumulated Good Ending Points (granted to every
+   exorcist; thresholds from the dossier). */
+export const GOOD_ENDING_REWARDS = [
+  { points: 4,  text: "4 Scrip and a congratulations from Temerity and Seer for being the best entertainment since exorcist bodycam footage." },
+  { points: 8,  text: "Gain 2 advances." },
+  { points: 10, text: "Gain the formalwear aesthetic for free. Wearing it to a Meet-Up with a Virtue for the first time grants +2 affinity." },
+  { points: 12, text: "Once per campaign any exorcist may \"summon\" a Virtue they have a Bond 3 with to the current mission if they are on the brink of death." },
+  { points: 16, text: "Every exorcist may choose 1 skill to increase by +1D (up to +4D) and is granted 1 free 6-hour Deployment Pass." }
+];
 
 // Harpocrates Dossier tuning. Admin can override rank requirements via module settings.
 export const RULES = {
