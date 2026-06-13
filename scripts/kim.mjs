@@ -9,7 +9,7 @@ import {
   getDossier, setDossier, wirePortraits,
   applyConversation, applyContraband, applyQuirk, applyAdjustment,
   toggleBond, endMission, timeOff, pushChat,
-  rankRequirement, bondedCount, bondSlotsAllowed,
+  rankRequirement, qualifiedRank, bondedCount, bondSlotsAllowed,
   contrabandHaul, blankDossier, foundryConfirm
 } from "./cardinal-virtuoso.mjs";
 
@@ -25,19 +25,24 @@ function portraitPath(key, v) {
   return `modules/${MOD}/${v.portrait || `img/virtues/${key}.webp`}`;
 }
 
+/* Localize helpers with a safe fallback to the key if i18n isn't ready. */
+function loc(key) { return game.i18n?.localize?.(key) ?? key; }
+function fmt(key, data) { return game.i18n?.format?.(key, data) ?? key; }
+
 /* bond state → relationship label shown like an MSN status. */
 function relStatus(slot) {
-  if (slot.pendingBreak) return { label: "💔 Heartbroken", cls: "broken" };
-  if (!slot.bonded)      return { label: "Offline", cls: "off" };
+  if (slot.pendingBreak) return { label: loc("cain-cardinal-virtuoso.rel.broken"), cls: "broken" };
+  if (!slot.bonded)      return { label: loc("cain-cardinal-virtuoso.rel.offline"), cls: "off" };
   return [
-    { label: "Acquaintance", cls: "r0" },
-    { label: "Friendly",     cls: "r1" },
-    { label: "Trusted",      cls: "r2" },
-    { label: "Inseparable",  cls: "r3" }
-  ][slot.rank] ?? { label: "Online", cls: "r0" };
+    { label: loc("cain-cardinal-virtuoso.rel.r0"), cls: "r0" },
+    { label: loc("cain-cardinal-virtuoso.rel.r1"), cls: "r1" },
+    { label: loc("cain-cardinal-virtuoso.rel.r2"), cls: "r2" },
+    { label: loc("cain-cardinal-virtuoso.rel.r3"), cls: "r3" }
+  ][slot.rank] ?? { label: loc("cain-cardinal-virtuoso.rel.online"), cls: "r0" };
 }
 
 function convCap(d) { return d.x2mod ? RULES.conv.perMissionX2 : RULES.conv.perMission; }
+function contraCap(d) { return d.x2mod ? RULES.contraband.perMissionX2 : RULES.contraband.perMission; }
 
 /* Match a CAIN bond item name (e.g. "Charity") to a module virtue key. */
 function virtueKeyByName(name) {
@@ -145,7 +150,9 @@ export class KimController {
         key, name: v.name, epithet: v.epithet, glyph: v.glyph,
         portrait: portraitPath(key, v),
         status: st.label, statusClass: st.cls,
-        bonded: slot.bonded, broken: slot.pendingBreak
+        bonded: slot.bonded, broken: slot.pendingBreak,
+        affinity: slot.affinity, rank: slot.rank,
+        reqNext: slot.bonded && slot.rank < 3 ? rankRequirement(slot, slot.rank + 1) : null
       };
     });
     const ctx = {
@@ -190,13 +197,17 @@ export class KimController {
   contrabandCtx(selectedKey) {
     const d = getDossier(this.targetUser);
     const { bondedKeys } = this.bondInfo();
+    const cap = contraCap(d);
     const contacts = this.visibleEntries(bondedKeys).map(([key, v]) => {
       const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
-      return { key, name: v.name, status: relStatus(slot).label, bonded: slot.bonded, selected: key === selectedKey };
+      return {
+        key, name: v.name, status: relStatus(slot).label, bonded: slot.bonded,
+        used: slot.contraUsed, selected: key === selectedKey
+      };
     });
     return {
       canWrite: this.canWrite(),
-      hqStock: d.hqStock, hqCap: RULES.contraband.hqCap,
+      hqStock: d.hqStock, hqCap: RULES.contraband.hqCap, cap,
       contacts,
       drops: [...d.log].reverse().filter(l => l.includes("Contraband")).slice(0, 12)
     };
@@ -248,7 +259,7 @@ export class KimController {
     const html = await renderTpl(T("kim-profile.hbs"), this.profileCtx(key));
     this._open.add(id);
     this.wm.open(id, {
-      title: `${VIRTUES[key].name} — Profile`, icon: "▤", width: 340,
+      title: `${VIRTUES[key].name} — ${loc("cain-cardinal-virtuoso.kim.profile")}`, icon: "▤", width: 340,
       html, onBody: (b) => this.wireProfile(b),
       onClose: () => this._open.delete(id)
     });
@@ -457,12 +468,35 @@ export class KimController {
   async onEndMission() {
     if (!this.canWrite()) return ui.notifications.warn("No clearance.");
     const d = getDossier(this.targetUser);
-    const { ups, haul } = endMission(d);
+
+    // Preview the irreversible effects before mutating, so the user can bail out.
+    const rankUps = [];
+    const breaks = [];
+    for (const [vkey, slot] of Object.entries(d.virtues)) {
+      if (slot.pendingBreak) { breaks.push(VIRTUES[vkey].name); continue; }
+      if (!slot.bonded) continue;
+      const q = qualifiedRank(slot);
+      if (q > slot.rank) rankUps.push(`${VIRTUES[vkey].name} → Bond ${q}`);
+    }
+    const haul = contrabandHaul(d);
+    const parts = [];
+    if (rankUps.length)
+      parts.push(`<p><b>${loc("cain-cardinal-virtuoso.confirm.endMissionRankups")}</b><br>${rankUps.join("<br>")}</p>`);
+    if (breaks.length)
+      parts.push(`<p><b>${loc("cain-cardinal-virtuoso.confirm.endMissionBreaks")}</b><br>${breaks.join(", ")}</p>`);
+    if (!rankUps.length && !breaks.length)
+      parts.push(`<p>${loc("cain-cardinal-virtuoso.confirm.endMissionNone")}</p>`);
+    parts.push(`<p>${loc("cain-cardinal-virtuoso.confirm.endMissionHaul")} +${haul}</p>`);
+    parts.push(`<p>${fmt("cain-cardinal-virtuoso.confirm.endMissionAsk", { mission: d.mission, next: d.mission + 1 })}</p>`);
+    const ok = await foundryConfirm(parts.join(""));
+    if (!ok) return;
+
+    const { ups, haul: collected } = endMission(d);
     await setDossier(this.targetUser, d);
     await this.syncActorBonds(d);
     ui.notifications.info(ups.length
-      ? `Mission closed. Rank-ups: ${ups.join(", ")}. Haul +${haul}.`
-      : `Mission closed. No rank-ups. Haul +${haul}.`);
+      ? `Mission closed. Rank-ups: ${ups.join(", ")}. Haul +${collected}.`
+      : `Mission closed. No rank-ups. Haul +${collected}.`);
     await this.refresh();
   }
 

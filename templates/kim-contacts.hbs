@@ -6,29 +6,29 @@
       {{#if me.avatar}}<img class="cv-kim-me-img" src="{{me.avatar}}" alt="{{me.name}}" />{{/if}}
     </div>
     <div class="cv-kim-me-id">
-      <span class="cv-kim-hello">Welcome to KIM!</span>
+      <span class="cv-kim-hello">{{localize 'cain-cardinal-virtuoso.kim.welcome'}}</span>
       <span class="cv-kim-me-name">{{me.name}}</span>
     </div>
-    <span class="cv-kim-online">● Online</span>
+    <span class="cv-kim-online">● {{localize 'cain-cardinal-virtuoso.kim.online'}}</span>
   </div>
 
   {{#if isGM}}
   <div class="cv-kim-gmpick">
-    <label>Dossier:</label>
+    <label>{{localize 'cain-cardinal-virtuoso.kim.dossier'}}</label>
     <select data-action="pickUser">
       {{#each allUsers}}
-      <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#unless active}} (offline){{/unless}}</option>
+      <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#unless active}} {{localize 'cain-cardinal-virtuoso.kim.offline'}}{{/unless}}</option>
       {{/each}}
     </select>
   </div>
   {{/if}}
 
   <div class="cv-kim-listwrap">
-    <div class="cv-kim-group">Contacts — Mission {{mission}}</div>
+    <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.kim.contacts'}} — {{localize 'cain-cardinal-virtuoso.kim.mission'}} {{mission}}</div>
     {{#if noCharacter}}
-    <div class="cv-kim-empty-state">No character linked to your user. Ask the GM to assign your CAIN sheet.</div>
+    <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.kim.noCharacter'}}</div>
     {{else if noBonds}}
-    <div class="cv-kim-empty-state">No bonds started yet. Begin a Virtue bond on your character sheet and it will appear here.</div>
+    <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.kim.noBonds'}}</div>
     {{/if}}
     <ul class="cv-kim-list">
       {{#each contacts}}
@@ -41,8 +41,9 @@
         <span class="cv-kim-c-id">
           <span class="cv-kim-c-name">{{name}} <em>{{epithet}}</em></span>
           <span class="cv-kim-c-status cv-kim-st-{{statusClass}}">{{status}}</span>
+          {{#if bonded}}<span class="cv-kim-c-meta">{{localize 'cain-cardinal-virtuoso.prof.affinity'}} {{affinity}} · {{localize 'cain-cardinal-virtuoso.prof.bond'}} {{rank}}{{#if reqNext}} (→{{reqNext}}){{/if}}</span>{{/if}}
         </span>
-        <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="Profile">▤</button>
+        <button type="button" class="cv-kim-c-prof" data-action="openProfile" data-virtue="{{key}}" title="{{localize 'cain-cardinal-virtuoso.kim.profile'}}">▤</button>
       </li>
       {{/each}}
     </ul>
@@ -50,19 +51,19 @@
 
   <div class="cv-kim-foot">
     <div class="cv-kim-foot-row">
-      <label>Codename</label>
-      <input type="text" name="codename" value="{{codename}}" readonly placeholder="—" title="Edit in HQ Console" />
+      <label>{{localize 'cain-cardinal-virtuoso.kim.codename'}}</label>
+      <input type="text" name="codename" value="{{codename}}" readonly placeholder="—" title="{{localize 'cain-cardinal-virtuoso.kim.editInHQ'}}" />
       {{#if canWrite}}<button type="button" class="cv-btn" data-action="openHQ">⚙ HQ</button>{{/if}}
     </div>
     <div class="cv-kim-foot-row">
-      <span class="cv-kim-stat">Bonds {{bondsUsed}}/{{bondsAllowed}}</span>
-      <span class="cv-kim-stat">HQ stock {{hqStock}}</span>
-      {{#if canWrite}}<button type="button" class="cv-btn" data-action="openDrop">📦 Dead Drop</button>{{/if}}
+      <span class="cv-kim-stat">{{localize 'cain-cardinal-virtuoso.kim.bonds'}} {{bondsUsed}}/{{bondsAllowed}}</span>
+      <span class="cv-kim-stat">{{localize 'cain-cardinal-virtuoso.kim.hqStock'}} {{hqStock}}</span>
+      {{#if canWrite}}<button type="button" class="cv-btn" data-action="openDrop">📦 {{localize 'cain-cardinal-virtuoso.kim.deadDrop'}}</button>{{/if}}
     </div>
     {{#if canWrite}}
     <div class="cv-kim-foot-row">
-      <button type="button" class="cv-btn" data-action="endMission">End Mission</button>
-      {{#if x2mod}}<button type="button" class="cv-btn" data-action="timeOff">Time Off</button>{{/if}}
+      <button type="button" class="cv-btn" data-action="endMission">{{localize 'cain-cardinal-virtuoso.kim.endMission'}}</button>
+      {{#if x2mod}}<button type="button" class="cv-btn" data-action="timeOff">{{localize 'cain-cardinal-virtuoso.kim.timeOff'}}</button>{{/if}}
     </div>
     {{/if}}
   </div>

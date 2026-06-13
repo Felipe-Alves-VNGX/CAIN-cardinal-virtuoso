@@ -11,33 +11,33 @@
 
   {{#if canWrite}}
   <div class="cv-kim-drop-form">
-    <label>Recipient</label>
+    <label>{{localize 'cain-cardinal-virtuoso.drop.recipient'}}</label>
     <select name="dropVirtue">
       {{#each contacts}}
-      <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}} — {{status}}{{#unless bonded}} (no bond){{/unless}}</option>
+      <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}} — {{status}}{{#if bonded}} ({{used}}/{{../cap}}){{else}} {{localize 'cain-cardinal-virtuoso.drop.noBond'}}{{/if}}</option>
       {{/each}}
     </select>
 
-    <label>Package</label>
+    <label>{{localize 'cain-cardinal-virtuoso.drop.package'}}</label>
     <select name="dropKind">
-      <option value="favorite">Favorite (+3)</option>
-      <option value="like">Like (+3)</option>
-      <option value="neutral">Neutral (+1)</option>
-      <option value="dislike">Dislike (&minus;3)</option>
-      <option value="hatemail">Hate-mail (&minus;3)</option>
+      <option value="favorite">{{localize 'cain-cardinal-virtuoso.drop.favorite'}} (+3)</option>
+      <option value="like">{{localize 'cain-cardinal-virtuoso.drop.like'}} (+3)</option>
+      <option value="neutral">{{localize 'cain-cardinal-virtuoso.drop.neutral'}} (+1)</option>
+      <option value="dislike">{{localize 'cain-cardinal-virtuoso.drop.dislike'}} (&minus;3)</option>
+      <option value="hatemail">{{localize 'cain-cardinal-virtuoso.drop.hatemail'}} (&minus;3)</option>
     </select>
 
-    <button type="button" class="cv-btn cv-btn-on" data-action="drop">Drop &#9656;</button>
+    <button type="button" class="cv-btn cv-btn-on" data-action="drop">{{localize 'cain-cardinal-virtuoso.drop.send'}} &#9656;</button>
   </div>
-  <div class="cv-kim-drop-hint">Each drop spends 1 HQ unit. Gifts need an active contact; hate-mail does not. Stock refills when a mission closes.</div>
+  <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.drop.hint'}}</div>
   {{else}}
-  <div class="cv-kim-drop-hint">You don't have clearance to send contraband from this dossier.</div>
+  <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.drop.noClearance'}}</div>
   {{/if}}
 
   <div class="cv-kim-drop-log">
-    <div class="cv-kim-group">Recent drops</div>
+    <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.drop.recent'}}</div>
     <ul class="cv-kim-notes">
-      {{#each drops}}<li>{{this}}</li>{{else}}<li class="cv-kim-empty">No drops logged yet.</li>{{/each}}
+      {{#each drops}}<li>{{this}}</li>{{else}}<li class="cv-kim-empty">{{localize 'cain-cardinal-virtuoso.drop.noDrops'}}</li>{{/each}}
     </ul>
   </div>
 

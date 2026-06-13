@@ -513,6 +513,7 @@
 .cv-kim-c-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cv-kim-c-name em { font-style: italic; opacity: 0.65; font-size: 10px; }
 .cv-kim-c-status { font-size: 9px; color: var(--text-dim); }
+.cv-kim-c-meta { font-size: 9px; color: var(--text-dim); opacity: 0.85; letter-spacing: 0.2px; }
 .cv-kim-st-off { color: #888; }  .cv-kim-st-r0 { color: #2a7fbf; }
 .cv-kim-st-r1 { color: var(--good); } .cv-kim-st-r2 { color: #9a7700; }
 .cv-kim-st-r3 { color: #a23da2; } .cv-kim-st-broken { color: var(--cain); }

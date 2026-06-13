@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.6.0 — Usability: localization, safer End Mission & inline state
+- **Real localization (i18n).** All KIM/desktop UI text — buttons, labels,
+  hints, statuses, empty states, INTEL/NOTES headers and relationship labels —
+  now resolves through `lang/en.json` / `lang/pt-BR.json`, so Português (Brasil)
+  finally renders end to end. Retro flavor (boot sequence, `.EXE` icons, the
+  SEER//TEMERITY brand) stays in English by design. *Known gap:* the in-world
+  event log and toast notifications are still English — they're stored strings
+  filtered by substring, so they'll move once the log is restructured.
+- **End Mission asks first.** Closing a mission is irreversible (rank-ups,
+  broken-bond resets, contraband haul), so it now shows a confirmation listing
+  the rank-ups to apply, the bonds about to be cleared and the haul to collect,
+  before advancing the mission.
+- **State visible where you act.** The contact list now shows each bonded
+  Virtue's affinity, bond rank and next-rank requirement inline, and the Dead
+  Drop recipient list shows each contact's contraband uses left this mission
+  (used/cap), so limits are clear before an action is denied.
+
 ## 1.5.0 — CAIN sheet integration, HQ Console & live sync
 - **CAIN character integration.** KIM now reads the character linked to each
   player (`user.character`) and shows *only* the Virtue bonds that character has
