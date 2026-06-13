@@ -1,4 +1,4 @@
-import { VIRTUES, RULES } from "./data.mjs";
+import { VIRTUES, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
 const FLAG = "dossier";
@@ -15,7 +15,15 @@ const FLAG = "dossier";
 function blankSlot() {
   return {
     bonded: false, affinity: 0, rank: 0, brokenCount: 0, pendingBreak: false,
-    convUsed: 0, contraUsed: 0, quirkUses: {}, chat: []
+    convUsed: 0, contraUsed: 0, quirkUses: {}, chat: [],
+    missionLoss: 0, // total affinity lost this mission (for "The Fumbler")
+    // Gift-granted buffs. apology: loss shield (−2 first, −1 after) until
+    // apologyExpiresMission closes. page: ignore one disliked topic + note +1D.
+    // journal: warn before the first affinity-lowering action each mission.
+    buffs: {
+      apology: false, apologyUsed: false, apologyExpiresMission: 0,
+      page: false, journal: false, journalWarnedThisMission: false
+    }
   };
 }
 
@@ -24,7 +32,9 @@ export function blankDossier() {
   for (const k of Object.keys(VIRTUES)) virtues[k] = blankSlot();
   return {
     codename: "", mission: 1, x2mod: false, gateUser: false,
-    covert: 0, cat: 0, hqStock: 0, extraBonds: 0, log: [], virtues
+    covert: 0, cat: 0, hqStock: 0, extraBonds: 0, log: [], virtues,
+    achievements: {}, // key → true once unlocked (auto-detected or GM-toggled)
+    soloMissions: 0   // consecutive completed missions with no active bond
   };
 }
 
@@ -48,17 +58,82 @@ function pushLog(d, msg) {
   if (d.log.length > RULES.logMax) d.log.splice(0, d.log.length - RULES.logMax);
 }
 
-/* Effective minimum affinity for a rank, including broken-bond penalties. */
-export function rankRequirement(slot, rank) {
-  const base = RULES.rankReq[rank] ?? Infinity;
-  return base + (slot.brokenCount ?? 0) * RULES.brokenPenalty;
+/* Per-virtue affinity requirement overrides (GM-configured via the Tracker
+   window, persisted in the world setting "rankReqByVirtue"). Shape:
+   { justice: { 1: 5, 2: 10, 3: 18 }, ... }. Missing entries fall back to the
+   global RULES.rankReq. */
+let RANK_REQ_BY_VIRTUE = {};
+export function getRankReqByVirtue() { return RANK_REQ_BY_VIRTUE; }
+/* Base (pre-broken-penalty) minimum affinity for a rank, honoring per-virtue overrides. */
+export function baseRankReq(rank, vkey) {
+  return RANK_REQ_BY_VIRTUE[vkey]?.[rank] ?? RULES.rankReq[rank] ?? Infinity;
+}
+export async function setVirtueRankReq(vkey, trip) {
+  const clean = {};
+  for (const rank of [1, 2, 3]) {
+    const n = Number(trip?.[rank]);
+    if (Number.isFinite(n) && n > 0) clean[rank] = Math.round(n);
+  }
+  RANK_REQ_BY_VIRTUE = { ...RANK_REQ_BY_VIRTUE, [vkey]: clean };
+  try { await game.settings.set(MOD, "rankReqByVirtue", RANK_REQ_BY_VIRTUE); }
+  catch (e) { console.warn(`${MOD} | could not persist per-virtue rank reqs`, e); }
+}
+
+/* Effective minimum affinity for a rank, including broken-bond penalties.
+   Pass vkey to honor per-virtue overrides; without it, the global tuning applies. */
+export function rankRequirement(slot, rank, vkey) {
+  return baseRankReq(rank, vkey) + (slot.brokenCount ?? 0) * RULES.brokenPenalty;
 }
 
 /* Highest rank the current affinity qualifies for (does not auto-apply). */
-export function qualifiedRank(slot) {
+export function qualifiedRank(slot, vkey) {
   let r = 0;
-  for (const rank of [1, 2, 3]) if (slot.affinity >= rankRequirement(slot, rank)) r = rank;
+  for (const rank of [1, 2, 3]) if (slot.affinity >= rankRequirement(slot, rank, vkey)) r = rank;
   return r;
+}
+
+/* ----------------------------------------------------------------------------
+ * ACHIEVEMENTS — "Special <3" endings. Auto detectors read dossier state; once
+ * an achievement is unlocked it sticks (stored in d.achievements), so a later
+ * broken bond or counter reset can't revoke it.
+ * -------------------------------------------------------------------------- */
+function autoUnlocked(d, code) {
+  const rank = (k) => d.virtues[k]?.rank | 0;
+  switch (code) {
+    case "heartBreaker": return Object.values(d.virtues).filter(s => (s.brokenCount | 0) > 0).length >= 4;
+    case "fumbler":      return Object.values(d.virtues).some(s => (s.missionLoss | 0) >= 15);
+    case "hunter":       return (d.soloMissions | 0) >= 5;
+    case "besoDeTres":   return (rank("sobriety") >= 3 && rank("prudence") >= 3) || (rank("chastity") >= 3 && rank("faith") >= 3);
+    default:
+      if (code?.startsWith("bond3:")) return rank(code.slice(6)) >= 3;
+      return false;
+  }
+}
+
+/* Fold any newly-satisfied auto achievements into the dossier (idempotent). */
+export function refreshAchievements(d) {
+  d.achievements ??= {};
+  for (const a of ACHIEVEMENTS) {
+    if (a.auto && autoUnlocked(d, a.auto)) d.achievements[a.key] = true;
+  }
+  return d.achievements;
+}
+
+/* GM toggle for subjective achievements (and overrides). */
+export function setAchievement(d, key, on) {
+  if (!ACHIEVEMENTS.some(a => a.key === key)) return { ok: false, msg: "Unknown achievement." };
+  d.achievements ??= {};
+  if (on) d.achievements[key] = true; else delete d.achievements[key];
+  const a = ACHIEVEMENTS.find(a => a.key === key);
+  pushLog(d, `Achievement ${on ? "unlocked" : "cleared"}: ${a.name}.`);
+  return { ok: true, msg: `${a.name}: ${on ? "unlocked" : "cleared"}.` };
+}
+
+/* Reward tier reached for a given Good Ending Point total (or null). */
+export function goodEndingTier(points) {
+  let tier = null;
+  for (const r of GOOD_ENDING_REWARDS) if (points >= r.points) tier = r;
+  return tier;
 }
 
 function convCap(d) { return d.x2mod ? RULES.conv.perMissionX2 : RULES.conv.perMission; }
@@ -100,19 +175,35 @@ function slotLocked(slot) {
   return null;
 }
 
+/* Apology Note shield: when active, soften an affinity loss — by 2 the first
+   time, by 1 on later losses within the buff window. Mutates the slot's buff
+   state. No-op on gains or when no apology buff is active. */
+function withShield(slot, delta) {
+  if (delta >= 0 || !slot.buffs?.apology) return delta;
+  const reduction = slot.buffs.apologyUsed ? 1 : 2;
+  slot.buffs.apologyUsed = true;
+  return -Math.max(0, -delta - reduction);
+}
+
 export function applyConversation(d, vkey, { topicHit, goodTalk, connectionHit }) {
   const slot = d.virtues[vkey];
   const lock = slotLocked(slot);
   if (lock) return { ok: false, msg: lock };
   if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
   let delta = 0;
+  let note = "";
   if (topicHit === "like") delta += RULES.conv.topic;
-  if (topicHit === "dislike") delta += RULES.conv.dislike;
+  if (topicHit === "dislike") {
+    if (slot.buffs?.page) { slot.buffs.page = false; note = " (Page of One-liners: disliked-topic penalty ignored, +1D)"; }
+    else delta += RULES.conv.dislike;
+  }
   if (goodTalk) delta += RULES.conv.goodTalk;
   if (connectionHit) delta += RULES.conv.connection;
+  delta = withShield(slot, delta);
   slot.affinity += delta;
+  if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
   slot.convUsed += 1;
-  return finalize(d, vkey, `${VIRTUES[vkey].name} — Conversation: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+  return finalize(d, vkey, `${VIRTUES[vkey].name} — Conversation: ${delta >= 0 ? "+" : ""}${delta} affinity.${note}`);
 }
 
 export function applyContraband(d, vkey, kind) {
@@ -131,7 +222,9 @@ export function applyContraband(d, vkey, kind) {
     case "neutral": delta = RULES.contraband.neutral; break;
     case "hatemail": delta = Math.min(0, RULES.contraband.dislike); break; // only ever down
   }
+  if (!isHate) delta = withShield(slot, delta); // hate-mail loss is intentional — never shielded
   slot.affinity += delta;
+  if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
   d.hqStock -= 1;
   if (!isHate) slot.contraUsed += 1;
   return finalize(d, vkey, `${VIRTUES[vkey].name} — Contraband (${kind}): ${delta >= 0 ? "+" : ""}${delta} affinity.`);
@@ -146,9 +239,11 @@ export function applyQuirk(d, vkey, qIndex) {
   const used = slot.quirkUses[qIndex] ?? 0;
   if (quirk.perMission && used >= quirk.perMission)
     return { ok: false, msg: `Quirk limit reached (${quirk.perMission}/mission).` };
-  slot.affinity += quirk.delta;
+  const qd = withShield(slot, quirk.delta);
+  slot.affinity += qd;
+  if (qd < 0) slot.missionLoss = (slot.missionLoss | 0) - qd;
   slot.quirkUses[qIndex] = used + 1;
-  return finalize(d, vkey, `${VIRTUES[vkey].name} — Quirk "${quirk.label}": ${quirk.delta >= 0 ? "+" : ""}${quirk.delta} affinity.`);
+  return finalize(d, vkey, `${VIRTUES[vkey].name} — Quirk "${quirk.label}": ${qd >= 0 ? "+" : ""}${qd} affinity.`);
 }
 
 /* Admin-only free adjustment (table rulings, undocumented quirks). */
@@ -158,6 +253,51 @@ export function applyAdjustment(d, vkey, delta) {
   if (!delta) return { ok: false, msg: "Adjustment is 0." };
   slot.affinity += delta;
   return finalize(d, vkey, `${VIRTUES[vkey].name} — Admin adjustment: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+}
+
+/* Apply a contraband gift's effect to a bonded virtue. `fresh` flags the
+   12h-from-deployment bonus on the Heated Blanket. Returns { ok, msg }. */
+export function applyGift(d, vkey, giftKey, { fresh = false } = {}) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  const gift = GIFTS[giftKey];
+  if (!gift) return { ok: false, msg: "Unknown gift." };
+  const eff = gift.effect ?? {};
+  switch (eff.kind) {
+    case "flat": {
+      const delta = (eff.base | 0) + (fresh ? (eff.freshBonus | 0) : 0);
+      slot.affinity += delta;
+      return finalize(d, vkey, `${VIRTUES[vkey].name} — ${gift.name}: +${delta} affinity.`);
+    }
+    case "rankOrPlus": {
+      const q = qualifiedRank(slot, vkey);
+      if (q > slot.rank) {
+        slot.rank = q;
+        pushLog(d, `${VIRTUES[vkey].name} → Bond ${q} (via ${gift.name}).`);
+        const notes = reactToBond(d, vkey, "bond upgrade");
+        return { ok: true, msg: [`${VIRTUES[vkey].name} — ${gift.name}: Bond ↑ ${q}.`, ...notes].join(" ") };
+      }
+      slot.affinity += (eff.plus | 0);
+      return finalize(d, vkey, `${VIRTUES[vkey].name} — ${gift.name}: +${eff.plus | 0} affinity (bond minimum not met).`);
+    }
+    case "buffConversation":
+      slot.buffs.page = true;
+      pushLog(d, `${VIRTUES[vkey].name} — ${gift.name} ready: next Meet-Up gets +1D and ignores a disliked topic.`);
+      return { ok: true, msg: `${gift.name} ready for ${VIRTUES[vkey].name}: next Meet-Up gets +1D and ignores a disliked topic.` };
+    case "buffApology":
+      slot.buffs.apology = true;
+      slot.buffs.apologyUsed = false;
+      slot.buffs.apologyExpiresMission = d.mission + 1;
+      pushLog(d, `${VIRTUES[vkey].name} — ${gift.name} active: affinity losses softened (−2 then −1) through mission ${d.mission + 1}.`);
+      return { ok: true, msg: `${gift.name} active for ${VIRTUES[vkey].name}: affinity losses softened (−2 then −1).` };
+    case "buffJournal":
+      slot.buffs.journal = true;
+      pushLog(d, `${VIRTUES[vkey].name} — ${gift.name} active: warning before the first affinity-lowering action each mission.`);
+      return { ok: true, msg: `${gift.name} active for ${VIRTUES[vkey].name}: warning before the first affinity-lowering action each mission.` };
+    default:
+      return { ok: false, msg: "Gift has no defined effect." };
+  }
 }
 
 /* Bonding/upgrading a virtue makes its rivals (or fans) react. */
@@ -213,7 +353,7 @@ function applyRankUps(d) {
   const ups = [];
   for (const [vkey, slot] of Object.entries(d.virtues)) {
     if (!slot.bonded || slot.pendingBreak) continue;
-    const q = qualifiedRank(slot);
+    const q = qualifiedRank(slot, vkey);
     if (q > slot.rank) { slot.rank = q; ups.push(vkey); pushLog(d, `${VIRTUES[vkey].name} → Bond ${q}.`); }
   }
   for (const vkey of ups) reactToBond(d, vkey, "bond upgrade");
@@ -225,12 +365,17 @@ function resetCounters(d) {
     slot.convUsed = 0;
     slot.contraUsed = 0;
     slot.quirkUses = {};
+    slot.missionLoss = 0;
+    if (slot.buffs) slot.buffs.journalWarnedThisMission = false;
   }
 }
 
 /* End of mission: rank-ups, broken-bond cleanup, contraband haul, counter reset. */
 export function endMission(d) {
+  const hadBond = Object.values(d.virtues).some(s => s.bonded || s.pendingBreak);
   const ups = applyRankUps(d);
+  // Evaluate while ranks are at their peak and counters (missionLoss, brokenCount) are intact.
+  refreshAchievements(d);
   for (const [vkey, slot] of Object.entries(d.virtues)) {
     if (!slot.pendingBreak) continue;
     slot.pendingBreak = false;
@@ -240,11 +385,20 @@ export function endMission(d) {
     pushLog(d, `${VIRTUES[vkey].name}: broken bond cleared — may be re-linked from scratch.`);
   }
   resetCounters(d);
+  d.soloMissions = hadBond ? 0 : (d.soloMissions | 0) + 1;
   const haul = contrabandHaul(d);
   const stored = Math.min(RULES.contraband.hqCap, d.hqStock + haul);
   pushLog(d, `Mission ${d.mission} closed. Contraband haul +${haul} (stock ${stored}/${RULES.contraband.hqCap}).`);
   d.hqStock = stored;
   d.mission += 1;
+  // Apology shields lapse once their window (current + next mission) has passed.
+  for (const slot of Object.values(d.virtues)) {
+    if (slot.buffs?.apology && slot.buffs.apologyExpiresMission < d.mission) {
+      slot.buffs.apology = false;
+      slot.buffs.apologyUsed = false;
+    }
+  }
+  refreshAchievements(d); // catches "Nothing Loves the Hunter" once soloMissions ticks up
   return { ups: ups.map(k => `${VIRTUES[k].name} → Bond ${d.virtues[k].rank}`), haul };
 }
 
@@ -252,6 +406,7 @@ export function endMission(d) {
 export function timeOff(d) {
   if (!d.x2mod) return { ok: false, msg: "Time off requires the X2 Text Speed Mod." };
   const ups = applyRankUps(d);
+  refreshAchievements(d);
   resetCounters(d);
   d.extraBonds = (d.extraBonds | 0) + 1;
   pushLog(d, `Time off taken: limits reset, +1 bond slot.`);
@@ -294,6 +449,43 @@ function parseRankReq(v) {
   if (p.length === 3 && p.every(n => !isNaN(n))) RULES.rankReq = { 1: p[0], 2: p[1], 3: p[2] };
 }
 
+/* GM-only: ensure a world Item compendium holding the 6 contraband gifts exists
+   and is populated. Each gift carries flags["cain-cardinal-virtuoso"].gift = key
+   so the Dead Drop can map it back to its automated effect. Idempotent: creates
+   the pack once, fills it only while empty, so dragging gifts onto a sheet works
+   out of the box. */
+export async function ensureGiftCompendium() {
+  if (!game.user.isGM) return;
+  const name = `${MOD}-gifts`;
+  const collId = `world.${name}`;
+  try {
+    const CC = foundry.documents?.collections?.CompendiumCollection ?? CompendiumCollection;
+    let pack = game.packs.get(collId);
+    if (!pack) {
+      pack = await CC.createCompendium({
+        type: "Item", label: "Cardinal Virtuoso — Gifts", name, package: "world"
+      });
+    }
+    const idx = pack.index?.size ? pack.index : await pack.getIndex();
+    if ((idx?.size ?? 0) > 0) return;
+    const docs = Object.entries(GIFTS).map(([key, g]) => ({
+      name: g.name, type: "item", img: "systems/cain/assets/items/kp.png",
+      system: {
+        description: `<p>${g.desc}</p>`, quantity: 1, weight: 0,
+        roll: { diceNum: 1, diceSize: "d6", diceBonus: "" },
+        kitPoint: 0, scripValue: g.cost, type: "Contraband",
+        primaryColor: "#2a2a2a", accentColor: "#aa0000",
+        secondaryColor: "#555555", textColor: "#ffffff"
+      },
+      flags: { [MOD]: { gift: key } }
+    }));
+    await Item.createDocuments(docs, { pack: collId });
+    console.log(`${MOD} | gift compendium populated (${docs.length} items)`);
+  } catch (e) {
+    console.warn(`${MOD} | could not create/populate gift compendium`, e);
+  }
+}
+
 Hooks.once("init", () => {
   Handlebars.registerHelper("gt", (a, b) => Number(a) > Number(b));
   game.settings.register(MOD, "rankReq", {
@@ -307,13 +499,20 @@ Hooks.once("init", () => {
     hint: "Players may only link 1 new virtue per completed mission (plus time-off bonuses). GMs always bypass this.",
     scope: "world", config: true, type: Boolean, default: true
   });
+  // Per-virtue affinity tracker overrides — edited in the KIM Tracker window, not here.
+  game.settings.register(MOD, "rankReqByVirtue", {
+    scope: "world", config: false, type: Object, default: {}
+  });
 });
 
 Hooks.once("ready", () => {
   parseRankReq(game.settings.get(MOD, "rankReq"));
+  RANK_REQ_BY_VIRTUE = game.settings.get(MOD, "rankReqByVirtue") || {};
   game.cainCardinalVirtuoso ??= {};
   // Legacy macro entry point now opens the KIM desktop (the standalone grid was retired in 1.4).
   game.cainCardinalVirtuoso.open = () => game.cainCardinalVirtuoso.openDesktop?.();
+  game.cainCardinalVirtuoso.installGifts = ensureGiftCompendium;
+  ensureGiftCompendium();
   console.log(`${MOD} | ready`);
 });
 

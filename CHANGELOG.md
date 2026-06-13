@@ -1,5 +1,60 @@
 # Changelog
 
+## 1.9.0 — Special <3 Achievements & Good Ending Points
+- **New Achievements window** (🏆 in the contacts footer). Tracks the dossier's
+  "Special <3" achievements in two groups: the 13 good endings (the nine Bond-3
+  milestones plus the four story beats) and the bad/special endings. Players see
+  it read-only; the GM toggles the subjective ones with a checkbox, while the
+  objective ones detect automatically.
+- **Auto-detection.** Bond-3 achievements, "Beso de Tres", "Heart Breaker"
+  (4+ broken bonds), "The Fumbler" (−15 affinity in one mission) and "Nothing
+  Loves the Hunter" (5 missions with no bond) all unlock on their own and stick
+  once earned — a later broken bond or counter reset can't revoke them.
+- **Good Ending Points.** Each good achievement adds one point to the party's
+  shared total (counted once across all players). The window shows the live
+  total on a threshold bar with the 4/8/10/12/16 reward ladder, highlighting the
+  tier the party has reached.
+
+## 1.8.0 — Contraband gifts from the sheet, automated
+- **Gift items live on the character sheet.** A world Item compendium
+  ("Cardinal Virtuoso — Gifts") is created and populated automatically (GM, on
+  load) with the six dossier gifts — Heartfelt Note, Page of One-liners, Apology
+  Note, Heated Blanket, Well-Organized Journal and the 5-Hour Deployment Pass.
+  Each carries a module flag linking it back to its rules effect; drag one onto a
+  player's CAIN sheet and it becomes a giftable contraband item. Re-run anytime
+  via `game.cainCardinalVirtuoso.installGifts()`.
+- **Dead Drop gifts from inventory.** The Dead Drop now lists the gift items the
+  contact actually owns on their sheet. Giving one applies its automated effect
+  and spends one unit from the inventory (deletes at zero).
+- **Automated gift effects.** Heartfelt Note ranks the bond up if affinity
+  already meets the next minimum (else +1). Heated Blanket gives +2 (+1 within
+  12h of deployment, via a checkbox). 5-Hour Deployment Pass gives +12. Page of
+  One-liners queues a Meet-Up that ignores a disliked topic (+1D noted). Apology
+  Note softens affinity losses (−2 first, −1 after) through the current and next
+  mission. Well-Organized Journal warns you before the first affinity-lowering
+  action each mission, letting you rethink.
+
+## 1.7.0 — Live bond sync & per-virtue affinity trackers
+- **New bonds appear automatically.** KIM now watches the embedded `bond` Item
+  lifecycle (`createItem`/`deleteItem`/`updateItem`) on the linked CAIN character,
+  not just `updateActor` — so starting a Virtue bond on the sheet makes the
+  contact show up live, with no reopen. A sheet bond also counts as bonded inside
+  KIM (its `currentLevel` seeds the rank), so Conversation/Contraband/Quirks work
+  immediately without a manual "add contact" step. KIM stays authoritative on rank.
+  Bond→virtue matching is now robust to CAIN's inconsistent naming: it resolves a
+  bond by its embedded/compendium id and maps it via both item name and
+  `virtueName` (so official `Charity`/"The Twins" and custom
+  `Absolution (The Mourner)`/`Absolution` items both resolve correctly).
+- **Per-virtue affinity trackers.** Bond I/II/III minimum-affinity requirements
+  can now differ per Virtue (the dossier's per-bond "MINIMUM AFFINITY TRACKER"),
+  instead of one global 5/10/18. Overrides persist in a world setting and feed
+  rank-up logic everywhere.
+- **New Bond Trackers window** (📊 in the contacts footer). Both GM and players
+  see, per bond: a visual affinity tracker with the I/II/III thresholds and the
+  current affinity, the Virtue's personality (likes/dislikes/food/blasphemy) and
+  its per-rank bond abilities. The GM edits each Virtue's three thresholds inline;
+  players view read-only.
+
 ## 1.6.0 — Usability: localization, safer End Mission & inline state
 - **Real localization (i18n).** All KIM/desktop UI text — buttons, labels,
   hints, statuses, empty states, INTEL/NOTES headers and relationship labels —

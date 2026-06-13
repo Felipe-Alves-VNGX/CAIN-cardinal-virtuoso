@@ -58,7 +58,11 @@
     <div class="cv-kim-foot-row">
       <span class="cv-kim-stat">{{localize 'cain-cardinal-virtuoso.kim.bonds'}} {{bondsUsed}}/{{bondsAllowed}}</span>
       <span class="cv-kim-stat">{{localize 'cain-cardinal-virtuoso.kim.hqStock'}} {{hqStock}}</span>
+      <button type="button" class="cv-btn" data-action="openTracker">📊 {{localize 'cain-cardinal-virtuoso.kim.trackers'}}</button>
       {{#if canWrite}}<button type="button" class="cv-btn" data-action="openDrop">📦 {{localize 'cain-cardinal-virtuoso.kim.deadDrop'}}</button>{{/if}}
+    </div>
+    <div class="cv-kim-foot-row">
+      <button type="button" class="cv-btn" data-action="openAchievements">🏆 {{localize 'cain-cardinal-virtuoso.kim.achievements'}}</button>
     </div>
     {{#if canWrite}}
     <div class="cv-kim-foot-row">

@@ -30,6 +30,34 @@
     <button type="button" class="cv-btn cv-btn-on" data-action="drop">{{localize 'cain-cardinal-virtuoso.drop.send'}} &#9656;</button>
   </div>
   <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.drop.hint'}}</div>
+
+  <div class="cv-kim-drop-gifts">
+    <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.gift.heading'}}</div>
+    {{#if hasGifts}}
+    <label>{{localize 'cain-cardinal-virtuoso.drop.recipient'}}</label>
+    <select name="giftVirtue">
+      {{#each giftRecipients}}
+      <option value="{{key}}">{{name}} — {{status}}</option>
+      {{else}}
+      <option value="" disabled selected>{{localize 'cain-cardinal-virtuoso.gift.noRecipient'}}</option>
+      {{/each}}
+    </select>
+
+    <label>{{localize 'cain-cardinal-virtuoso.gift.item'}}</label>
+    <select name="giftItem">
+      {{#each gifts}}
+      <option value="{{itemId}}" title="{{desc}}">{{glyph}} {{name}} ×{{qty}}</option>
+      {{/each}}
+    </select>
+
+    <label class="cv-kim-drop-fresh"><input type="checkbox" name="giftFresh" /> {{localize 'cain-cardinal-virtuoso.gift.fresh'}}</label>
+
+    <button type="button" class="cv-btn cv-btn-on" data-action="dropGift">{{localize 'cain-cardinal-virtuoso.gift.send'}} &#9656;</button>
+    <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.gift.hint'}}</div>
+    {{else}}
+    <div class="cv-kim-empty">{{localize 'cain-cardinal-virtuoso.gift.none'}}</div>
+    {{/if}}
+  </div>
   {{else}}
   <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.drop.noClearance'}}</div>
   {{/if}}

@@ -1,0 +1,73 @@
+<div class="cv-kim cv-kim-ach">
+
+  {{#if noCharacter}}
+  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.kim.noCharacter'}}</div>
+  {{/if}}
+
+  <div class="cv-ach-gep">
+    <div class="cv-ach-gep-head">
+      <span class="cv-ach-gep-title">{{localize 'cain-cardinal-virtuoso.ach.gep'}}</span>
+      <span class="cv-ach-gep-num">{{gep}}</span>
+    </div>
+    <div class="cv-trk-bar">
+      <div class="cv-trk-fill" style="width:{{gepPct}}%"></div>
+      {{#each rewards}}
+      <div class="cv-trk-tick {{#if reached}}cv-trk-reached{{/if}}" style="left:{{pct}}%" title="{{text}}">
+        <span class="cv-trk-tick-val">{{points}}</span>
+      </div>
+      {{/each}}
+    </div>
+    <ul class="cv-ach-rewards">
+      {{#each rewards}}
+      <li class="{{#if reached}}cv-ach-rw-on{{/if}} {{#if current}}cv-ach-rw-cur{{/if}}">
+        <b>{{points}}</b> <span>{{text}}</span>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.ach.good'}} <small>({{goodUnlocked}}/{{goodTotal}} · {{pct}}%)</small></div>
+  <ul class="cv-ach-list">
+    {{#each good}}
+    <li class="cv-ach-row {{#if unlocked}}cv-ach-on{{/if}}">
+      <span class="cv-ach-mark">{{#if unlocked}}★{{else}}☆{{/if}}</span>
+      <span class="cv-ach-id">
+        <span class="cv-ach-name">{{name}}</span>
+        <span class="cv-ach-desc">{{desc}}</span>
+      </span>
+      {{#if @root.isGM}}
+        {{#unless auto}}
+        <label class="cv-ach-toggle" title="{{localize 'cain-cardinal-virtuoso.ach.manual'}}">
+          <input type="checkbox" data-action="toggleAch" data-ach="{{key}}" {{#if unlocked}}checked{{/if}} />
+        </label>
+        {{else}}
+        <span class="cv-ach-auto" title="{{localize 'cain-cardinal-virtuoso.ach.auto'}}">⚙</span>
+        {{/unless}}
+      {{/if}}
+    </li>
+    {{/each}}
+  </ul>
+
+  <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.ach.bad'}}</div>
+  <ul class="cv-ach-list cv-ach-bad">
+    {{#each bad}}
+    <li class="cv-ach-row {{#if unlocked}}cv-ach-on{{/if}}">
+      <span class="cv-ach-mark">{{#if unlocked}}☣{{else}}☆{{/if}}</span>
+      <span class="cv-ach-id">
+        <span class="cv-ach-name">{{name}}</span>
+        <span class="cv-ach-desc">{{desc}}</span>
+      </span>
+      {{#if @root.isGM}}
+        {{#unless auto}}
+        <label class="cv-ach-toggle" title="{{localize 'cain-cardinal-virtuoso.ach.manual'}}">
+          <input type="checkbox" data-action="toggleAch" data-ach="{{key}}" {{#if unlocked}}checked{{/if}} />
+        </label>
+        {{else}}
+        <span class="cv-ach-auto" title="{{localize 'cain-cardinal-virtuoso.ach.auto'}}">⚙</span>
+        {{/unless}}
+      {{/if}}
+    </li>
+    {{/each}}
+  </ul>
+
+</div>
