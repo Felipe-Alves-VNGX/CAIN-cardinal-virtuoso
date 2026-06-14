@@ -9,12 +9,14 @@ import {
   getDossier, setDossier, wirePortraits,
   applyConversation, sendContraband, scoreContraband, discardContraband,
   applyQuirk, applyAdjustment, applyGift,
+  requestConversation, requestQuirk, approveRequest, denyRequest,
   toggleBond, endMission, timeOff, pushChat,
   rankRequirement, baseRankReq, qualifiedRank, bondedCount, bondSlotsAllowed,
   contrabandHaul, blankDossier, foundryConfirm,
   getRankReqByVirtue, setVirtueRankReq,
   refreshAchievements, setAchievement, goodEndingTier
 } from "./cardinal-virtuoso.mjs";
+import { relayNotifyGM } from "./relay.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
 const T   = (name) => `modules/${MOD}/templates/${name}`;
@@ -691,6 +693,7 @@ export class KimController {
     this._delegate(body, {
       send:        (ev, el, b) => this.onSend(el.dataset.virtue, b),
       conv:        (ev, el, b) => this.onConv(el.dataset.virtue, b),
+      reqConv:     (ev, el, b) => this.onRequestConv(el.dataset.virtue, b),
       openProfile: (ev, el) => this.openProfile(el.dataset.virtue)
     });
     const input = body.querySelector('input[name="msg"]');
@@ -796,6 +799,18 @@ export class KimController {
       topicHit, goodTalk: get("good"), connectionHit: get("conn")
     });
     await this.commit(d, r);
+  }
+
+  async onRequestConv(key, body) {
+    if (!key || !this.canWrite() || game.user.isGM) return;
+    const box = body.querySelector(`.cv-conv-checks[data-virtue="${key}"]`);
+    const get = (n) => !!box?.querySelector(`input[data-cv="${n}"]`)?.checked;
+    const d = this.syncedDossier();
+    const topicHit = get("dislike") ? "dislike" : (get("topic") ? "like" : null);
+    const r = requestConversation(d, key, { topicHit, goodTalk: get("good"), connectionHit: get("conn") });
+    if (await this.commit(d, r)) {
+      relayNotifyGM({ fromUserId: game.user.id, label: fmt("cain-cardinal-virtuoso.req.notifyConv", { name: VIRTUES[key].name }) });
+    }
   }
 
   async onSend(key, body) {
