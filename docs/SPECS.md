@@ -281,6 +281,37 @@ manager interno suporta focar/minimizar janelas da desktop KIM.
 
 ---
 
+## 10. Virtudes homebrew (1.12)
+
+As 9 Virtues canônicas deixam de ser fixas: o GM pode adicionar Virtudes custom e
+ocultar/substituir canônicas, persistido em settings de mundo.
+
+### 10.1 Resolver
+- `CANONICAL_VIRTUES` — as 9 fixas (literal em `scripts/data.mjs`).
+- `VIRTUES` — o conjunto **efetivo**, um objeto **mutado in-place** (referência
+  estável; todos os `import { VIRTUES }` seguem válidos).
+- `rebuildVirtues({ custom, hidden })` — limpa `VIRTUES` e repovoa = canônicas
+  não-ocultas + custom (custom estende/sobrescreve por chave). Chamado no `ready`
+  e após cada edição.
+
+### 10.2 Settings
+- `customVirtues` (Object, world, `config:false`) — `{ <key>: <def> }`.
+- `hiddenVirtues` (Array, world, `config:false`) — chaves canônicas ocultadas.
+
+### 10.3 Integridade
+- `reactToBond` e mensagens usam `VIRTUES[k]?.name ?? k`; uma Virtue ausente
+  (oculta) é **pulada** nas reações (`continue`) e seu slot antigo sobrevive inerte.
+- Achievements `bond3:*` continuam atrelados às chaves canônicas.
+- Retratos: custom usa o campo `portrait` (vazio → fallback ao glifo).
+
+### 10.4 Editor (GM)
+Janela `kim-virtues` (GM-only): lista canônicas com toggle de ocultar; CRUD das
+custom (key, name, epithet, glyph, likes/dislikes/food, blasphemy, bonds 0–3,
+quirks `label|delta|perMission`, bondReactions `targetKey|delta`). Helpers:
+`saveCustomVirtue`, `deleteCustomVirtue`, `setVirtueHidden`, `isCanonical`.
+
+---
+
 ## 11. Relay player→GM (requests) (1.12)
 
 Players só editam o próprio dossiê — então Conversation e Quirk (que aplicam

@@ -331,6 +331,33 @@ comportamento esperado da perspectiva dos atores; os critérios de aceitação
 
 ---
 
+## Épico 12 — Virtudes homebrew (1.12)
+
+### US-12.1 — Criar Virtude custom (GM)
+> **Como** GM, **quero** criar uma Virtude homebrew com seus campos,
+> **para** estender o roster além das 9 canônicas.
+
+**Critérios de aceitação**
+- O editor aceita key, nome, epíteto, glifo, likes/dislikes/food, blasfêmia,
+  bonds 0–3, quirks e bondReactions; salva em `customVirtues` e reconstrói `VIRTUES` ao vivo.
+
+### US-12.2 — Editar/excluir custom (GM)
+**Critérios de aceitação**
+- Editar recarrega o formulário com os valores atuais; salvar sobrescreve.
+- Excluir remove de `customVirtues` (com confirmação) e reconstrói o conjunto.
+
+### US-12.3 — Ocultar canônica (GM)
+**Critérios de aceitação**
+- Marcar "ocultar" adiciona a chave a `hiddenVirtues`; a Virtude some do conjunto efetivo.
+- Desmarcar a traz de volta.
+
+### US-12.4 — Integridade ao ocultar
+**Critérios de aceitação**
+- Reações de vínculo que referenciam uma chave oculta são puladas sem erro.
+- Slots já salvos de uma Virtude oculta sobrevivem inertes (não reagem nem ganham slot novo).
+
+---
+
 ## Backlog / Roadmap (não implementado)
 
 - **R-1** Export para SQLite (uso cross-system / Power BI) como feature server-side separada do tracker in-world.
