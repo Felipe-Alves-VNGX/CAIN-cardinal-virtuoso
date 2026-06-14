@@ -4,7 +4,7 @@
  * shell, driven by a WindowManager. The rules layer (cardinal-virtuoso.mjs) is
  * reused unchanged — KIM is only a view + controller.
  * -------------------------------------------------------------------------- */
-import { VIRTUES, RANK_FLAVOR, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
+import { VIRTUES, CANONICAL_VIRTUES, RANK_FLAVOR, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
 import {
   getDossier, setDossier, wirePortraits,
   applyConversation, sendContraband, scoreContraband, discardContraband,
@@ -14,7 +14,8 @@ import {
   rankRequirement, baseRankReq, qualifiedRank, bondedCount, bondSlotsAllowed,
   contrabandHaul, blankDossier, foundryConfirm,
   getRankReqByVirtue, setVirtueRankReq,
-  refreshAchievements, setAchievement, goodEndingTier
+  refreshAchievements, setAchievement, goodEndingTier,
+  saveCustomVirtue, deleteCustomVirtue, setVirtueHidden
 } from "./cardinal-virtuoso.mjs";
 import { relayNotifyGM } from "./relay.mjs";
 
@@ -494,6 +495,21 @@ export class KimController {
     };
   }
 
+  virtuesCtx() {
+    const hidden = new Set(game.settings.get(MOD, "hiddenVirtues") || []);
+    const custom = game.settings.get(MOD, "customVirtues") || {};
+    const canonical = Object.entries(CANONICAL_VIRTUES).map(([key, v]) => ({
+      key, name: v.name, epithet: v.epithet, glyph: v.glyph, hidden: hidden.has(key)
+    }));
+    const customList = Object.entries(custom).map(([key, v]) => ({
+      key, name: v.name, epithet: v.epithet, glyph: v.glyph,
+      likes: (v.likes || []).join(", "), dislikes: (v.dislikes || []).join(", "),
+      food: (v.food || []).join(", "), blasphemy: v.blasphemy || "",
+      bond0: v.bonds?.[0] || "", bond1: v.bonds?.[1] || "", bond2: v.bonds?.[2] || "", bond3: v.bonds?.[3] || ""
+    }));
+    return { isGM: game.user.isGM, canonical, customList };
+  }
+
   /* ── window openers ── */
   async openContacts() {
     const id = "kim-contacts";
@@ -584,6 +600,18 @@ export class KimController {
     });
   }
 
+  async openVirtues() {
+    if (!game.user.isGM) return;
+    const id = "kim-virtues";
+    const html = await renderTpl(T("kim-virtues.hbs"), this.virtuesCtx());
+    this._open.add(id);
+    this.wm.open(id, {
+      title: loc("cain-cardinal-virtuoso.virt.title"), icon: "⛨", width: 460, height: 620,
+      html, onBody: (b) => this.wireVirtues(b),
+      onClose: () => this._open.delete(id)
+    });
+  }
+
   /* ── re-render every open KIM window after a state change ── */
   async refresh() {
     for (const id of [...this._open]) {
@@ -610,6 +638,8 @@ export class KimController {
         });
       } else if (id === "kim-contra-review") {
         this.wm.setHtml(id, await renderTpl(T("kim-contraband-review.hbs"), this.contrabandReviewCtx()), (b) => this.wireContrabandReview(b));
+      } else if (id === "kim-virtues") {
+        this.wm.setHtml(id, await renderTpl(T("kim-virtues.hbs"), this.virtuesCtx()), (b) => this.wireVirtues(b));
       } else if (id.startsWith("kim-conv-")) {
         const key = id.slice("kim-conv-".length);
         const prev = this.wm.bodyEl(id)?.querySelector('input[name="msg"]')?.value ?? "";
@@ -787,6 +817,73 @@ export class KimController {
     if (!reqId) return;
     const d = this.syncedDossier();
     await this.commit(d, denyRequest(d, reqId));
+  }
+
+  /* ── homebrew Virtue Designer (GM) ── */
+  wireVirtues(body) {
+    this._delegate(body, {
+      toggleHidden: (ev, el) => this.onToggleHidden(el.dataset.key, el.checked),
+      editCustom:   (ev, el, b) => this.fillCustomForm(b, el.dataset.key),
+      deleteCustom: (ev, el) => this.onDeleteCustom(el.dataset.key),
+      saveCustom:   (ev, el, b) => this.onSaveCustom(b)
+    });
+  }
+
+  async onToggleHidden(key, hidden) {
+    if (!game.user.isGM) return;
+    await setVirtueHidden(key, !!hidden);
+    await this.refresh();
+  }
+
+  async onDeleteCustom(key) {
+    if (!game.user.isGM) return;
+    const ok = await foundryConfirm(fmt("cain-cardinal-virtuoso.virt.delAsk", { key }));
+    if (!ok) return;
+    await deleteCustomVirtue(key);
+    await this.refresh();
+  }
+
+  fillCustomForm(body, key) {
+    const custom = game.settings.get(MOD, "customVirtues") || {};
+    const v = custom[key]; if (!v) return;
+    const set = (n, val) => { const el = body.querySelector(`[name="${n}"]`); if (el) el.value = val; };
+    set("vkey", key); set("vname", v.name); set("vepithet", v.epithet); set("vglyph", v.glyph);
+    set("vlikes", (v.likes||[]).join(", ")); set("vdislikes", (v.dislikes||[]).join(", "));
+    set("vfood", (v.food||[]).join(", ")); set("vblasphemy", v.blasphemy||"");
+    set("vbond0", v.bonds?.[0]||""); set("vbond1", v.bonds?.[1]||"");
+    set("vbond2", v.bonds?.[2]||""); set("vbond3", v.bonds?.[3]||"");
+    set("vquirks", (v.quirks||[]).map(q => `${q.label}|${q.delta}${q.perMission?`|${q.perMission}`:""}`).join("\n"));
+    set("vreactions", Object.entries(v.bondReactions||{}).map(([k,dl]) => `${k}|${dl}`).join("\n"));
+  }
+
+  async onSaveCustom(body) {
+    if (!game.user.isGM) return;
+    const g = (n) => body.querySelector(`[name="${n}"]`)?.value?.trim() ?? "";
+    const key = g("vkey").toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!key) return ui.notifications.warn(loc("cain-cardinal-virtuoso.virt.needKey"));
+    // A custom key may intentionally shadow a canonical Virtue (override merge in rebuildVirtues).
+    const csv = (s) => s.split(",").map(x => x.trim()).filter(Boolean);
+    const quirks = g("vquirks").split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+      const [label, delta, perMission] = l.split("|").map(x => x?.trim());
+      const q = { label: label || "?", delta: parseInt(delta, 10) || 0 };
+      const pm = parseInt(perMission, 10); if (Number.isFinite(pm) && pm > 0) q.perMission = pm;
+      return q;
+    });
+    const bondReactions = {};
+    for (const l of g("vreactions").split("\n").map(x => x.trim()).filter(Boolean)) {
+      const [tk, dl] = l.split("|").map(x => x?.trim());
+      const n = parseInt(dl, 10); if (tk && Number.isFinite(n)) bondReactions[tk] = n;
+    }
+    const def = {
+      name: g("vname") || key, epithet: g("vepithet"), glyph: g("vglyph") || "?", portrait: "",
+      likes: csv(g("vlikes")), dislikes: csv(g("vdislikes")), food: csv(g("vfood")),
+      blasphemy: g("vblasphemy") || "—",
+      bonds: { 0: g("vbond0"), 1: g("vbond1"), 2: g("vbond2"), 3: g("vbond3") },
+      quirks, bondReactions
+    };
+    await saveCustomVirtue(key, def);
+    ui.notifications.info(fmt("cain-cardinal-virtuoso.virt.saved", { name: def.name }));
+    await this.refresh();
   }
 
   /* Send an inventory gift item: apply its automated effect, then spend one. */

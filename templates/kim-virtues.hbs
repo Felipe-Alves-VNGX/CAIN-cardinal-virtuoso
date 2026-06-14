@@ -1,0 +1,59 @@
+<div class="cv-kim cv-kim-virt">
+  {{#unless isGM}}
+  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.virt.gmOnly'}}</div>
+  {{else}}
+
+  <div class="cv-kim-drop-head">
+    <span class="cv-kim-drop-ico">⛨</span>
+    <div class="cv-kim-drop-id">
+      <span class="cv-kim-drop-title">{{localize 'cain-cardinal-virtuoso.virt.title'}}</span>
+      <span class="cv-kim-drop-sub">{{localize 'cain-cardinal-virtuoso.virt.sub'}}</span>
+    </div>
+  </div>
+
+  <div class="cv-kim-review-sub">{{localize 'cain-cardinal-virtuoso.virt.canonical'}}</div>
+  <ul class="cv-virt-list">
+    {{#each canonical}}
+    <li class="cv-virt-row">
+      <span class="cv-virt-glyph">{{glyph}}</span>
+      <span class="cv-virt-name">{{name}} <small>{{epithet}}</small></span>
+      <label class="cv-virt-hide"><input type="checkbox" data-action="toggleHidden" data-key="{{key}}" {{#if hidden}}checked{{/if}} /> {{localize 'cain-cardinal-virtuoso.virt.hide'}}</label>
+    </li>
+    {{/each}}
+  </ul>
+
+  <div class="cv-kim-review-sub">{{localize 'cain-cardinal-virtuoso.virt.custom'}}</div>
+  <ul class="cv-virt-list">
+    {{#each customList}}
+    <li class="cv-virt-row">
+      <span class="cv-virt-glyph">{{glyph}}</span>
+      <span class="cv-virt-name">{{name}} <small>{{epithet}}</small></span>
+      <button type="button" class="cv-btn" data-action="editCustom" data-key="{{key}}">{{localize 'cain-cardinal-virtuoso.virt.edit'}}</button>
+      <button type="button" class="cv-btn cv-btn-bad" data-action="deleteCustom" data-key="{{key}}">{{localize 'cain-cardinal-virtuoso.virt.del'}}</button>
+    </li>
+    {{else}}
+    <li class="cv-kim-empty">{{localize 'cain-cardinal-virtuoso.virt.noCustom'}}</li>
+    {{/each}}
+  </ul>
+
+  <div class="cv-kim-review-sub">{{localize 'cain-cardinal-virtuoso.virt.form'}}</div>
+  <div class="cv-virt-form">
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fKey'}}<input type="text" name="vkey" placeholder="ex.: temperance" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fName'}}<input type="text" name="vname" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fEpithet'}}<input type="text" name="vepithet" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fGlyph'}}<input type="text" name="vglyph" maxlength="4" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fLikes'}}<input type="text" name="vlikes" placeholder="a, b, c" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fDislikes'}}<input type="text" name="vdislikes" placeholder="a, b, c" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fFood'}}<input type="text" name="vfood" placeholder="a, b" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fBlasphemy'}}<input type="text" name="vblasphemy" /></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fBond0'}}<textarea name="vbond0" rows="1"></textarea></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fBond1'}}<textarea name="vbond1" rows="1"></textarea></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fBond2'}}<textarea name="vbond2" rows="1"></textarea></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fBond3'}}<textarea name="vbond3" rows="1"></textarea></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fQuirks'}}<textarea name="vquirks" rows="3" placeholder="label|delta|perMission(opcional)"></textarea></label>
+    <label>{{localize 'cain-cardinal-virtuoso.virt.fReactions'}}<textarea name="vreactions" rows="2" placeholder="targetKey|delta"></textarea></label>
+    <button type="button" class="cv-btn cv-btn-on" data-action="saveCustom">{{localize 'cain-cardinal-virtuoso.virt.save'}}</button>
+  </div>
+
+  {{/unless}}
+</div>
