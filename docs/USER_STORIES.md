@@ -91,23 +91,28 @@ comportamento esperado da perspectiva dos atores; os critérios de aceitação
 - **Dado** o limite atingido, **quando** tento de novo, **então** é negado.
 - **Dado** um vínculo em `pendingBreak` ou não-vinculado, **então** a ação é negada.
 
-### US-3.2 — Contraband (presentes)
-> **Como** Player, **quero** enviar contrabando a uma Virtue vinculada,
-> **para** subir a afinidade gastando estoque do HQ.
+### US-3.2 — Enviar contrabando (player → fila) (1.11)
+> **Como** Player, **quero** enviar um item do inventário como contrabando a uma
+> Virtue vinculada, **para** que o GM o pontue depois.
 
 **Critérios de aceitação**
-- Limite: 2×/missão (3× com X2 mod).
-- Deltas: FAVORITE +3, LIKE +3, NEUTRAL +1, DISLIKE −3.
-- Cada envio gasta 1 de `hqStock`; **dado** estoque 0, **então** é negado.
-- **Dado** uma Virtue não-vinculada, **então** só hate-mail é permitido.
+- Limite: 2×/missão (3× com X2 mod); cada envio gasta 1 de `hqStock` e 1 slot.
+- **Dado** estoque 0, ou limite atingido, ou Virtue não-vinculada / em `pendingBreak`, **então** é negado.
+- O envio **não** aplica afinidade: enfileira em `contrabandQueue` aguardando revisão do HQ.
 
-### US-3.3 — Hate-mail
-> **Como** Player, **quero** enviar hate-mail mesmo a Virtues não-vinculadas,
-> **para** baixar a afinidade delas.
+### US-3.3 — Hate-mail *(histórico — substituído na 1.11)*
+> Nota: o antigo hate-mail (delta negativo direto a qualquer Virtue) foi
+> substituído pelo fluxo de revisão do GM (US-3.6) e por ajustes manuais (US-3.5).
+> Mantido aqui apenas como registro histórico.
+
+### US-3.6 — Revisar contrabando (GM) (1.11)
+> **Como** GM, **quero** revisar o contrabando enfileirado pelos players,
+> **para** pontuar a afinidade conforme o gosto da Virtue.
 
 **Critérios de aceitação**
-- Hate-mail só pode reduzir afinidade (`min(0, dislike)` = −3).
-- Hate-mail **ignora** o limite de contrabando, mas ainda gasta 1 de `hqStock`.
+- O GM vê a fila de cada operativo na janela de Review.
+- **Approve/Score**: aplica o delta por categoria (FAV/LIKE/NEUTRAL/DISLIKE) ou um valor livre, amortecido por Apology Note, e desenfileira (`scoreContraband`).
+- **Discard**: remove da fila sem pontuar (`discardContraband`).
 
 ### US-3.4 — Quirks
 > **Como** Player, **quero** disparar quirks específicas de cada Virtue com um clique,
@@ -227,7 +232,71 @@ comportamento esperado da perspectiva dos atores; os critérios de aceitação
 
 ---
 
+## Épico 8 — Gifts automatizados (1.8)
+
+### US-8.1 — Dar um gift do inventário
+> **Como** Player, **quero** soltar um gift (item de compêndio) numa Virtue,
+> **para** aplicar seu efeito automaticamente.
+
+**Critérios de aceitação**
+- O módulo cria um compêndio de mundo com os 6 gifts (GM-only, idempotente).
+- Cada gift carrega `flags["cain-cardinal-virtuoso"].gift = <key>`; o Dead Drop o mapeia ao efeito.
+
+### US-8.2 — Efeitos dos gifts
+> **Como** Sistema, **quero** resolver cada gift conforme seu `effect.kind`.
+
+**Critérios de aceitação**
+- `flat` (Heated Blanket, Deployment Pass): `+base` (+`freshBonus` se "fresh").
+- `rankOrPlus` (Heartfelt Note): sobe rank se a afinidade qualifica, senão `+plus`.
+- `buffConversation` (Page of One-liners): arma `buffs.page`.
+- `buffApology` (Apology Note): arma `buffs.apology` até `mission+1`.
+- `buffJournal` (Well-Organized Journal): arma `buffs.journal`.
+
+---
+
+## Épico 9 — Achievements & Good Ending Points (1.9)
+
+### US-9.1 — Detecção automática
+> **Como** Sistema, **quero** desbloquear conquistas automáticas a partir do estado,
+> **para** não exigir marcação manual quando o critério é objetivo.
+
+**Critérios de aceitação**
+- `refreshAchievements` é idempotente; uma vez desbloqueada, a conquista persiste.
+- Detectores: `bond3:<key>`, `heartBreaker` (≥4 quebras), `fumbler` (≥15 perda/missão), `hunter` (5 missões solo), `besoDeTres`.
+
+### US-9.2 — Toggle do GM
+> **Como** GM, **quero** marcar/desmarcar conquistas subjetivas (`auto:null`).
+
+**Critérios de aceitação**
+- `setAchievement(d, key, on)` desbloqueia/limpa e registra no log.
+
+### US-9.3 — Pontuação compartilhada e ladder
+> **Como** party, **quero** somar Good Ending Points pelas conquistas `good`,
+> **para** alcançar recompensas em degraus.
+
+**Critérios de aceitação**
+- Pontos = conquistas `group:"good"` desbloqueadas (uma vez cada, na party).
+- `goodEndingTier(points)` resolve a recompensa em `GOOD_ENDING_REWARDS` (4/8/10/12/16).
+
+---
+
+## Épico 10 — Trackers por Virtue (1.7)
+
+### US-10.1 — Requisitos por Virtue
+> **Como** GM, **quero** sobrescrever os requisitos de rank por Virtue,
+> **para** afinar a dificuldade individualmente.
+
+**Critérios de aceitação**
+- `rankReqByVirtue` (`{ <key>: {1,2,3} }`); `baseRankReq` usa o override, senão `RULES.rankReq`.
+
+### US-10.2 — Janela de tracker
+> **Como** Player/GM, **quero** uma janela com os requisitos por Virtue.
+
+**Critérios de aceitação**
+- Read-only para o Player; editável para o GM.
+
+---
+
 ## Backlog / Roadmap (não implementado)
 
 - **R-1** Export para SQLite (uso cross-system / Power BI) como feature server-side separada do tracker in-world.
-- **R-2** Relay player→GM via socketlib, reusando `applyConversation`/`applyContraband`/`endMission` sem alteração.
