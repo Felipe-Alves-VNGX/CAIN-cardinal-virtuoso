@@ -438,12 +438,14 @@ function reactToBond(d, changedKey, why) {
   const notes = [];
   for (const [vkey, slot] of Object.entries(d.virtues)) {
     if (vkey === changedKey || !slot.bonded || slot.pendingBreak) continue;
-    const reactions = VIRTUES[vkey].bondReactions ?? {};
+    const def = VIRTUES[vkey];
+    if (!def) continue; // hidden/removed virtue still stored — skip its reactions
+    const reactions = def.bondReactions ?? {};
     const delta = reactions[changedKey] ?? reactions["*"];
     if (!delta) continue;
     slot.affinity += delta;
     const r = finalize(d, vkey,
-      `${VIRTUES[vkey].name} reacts to your ${why} with ${VIRTUES[changedKey].name}: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+      `${def.name} reacts to your ${why} with ${VIRTUES[changedKey]?.name ?? changedKey}: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
     notes.push(r.msg);
   }
   return notes;
@@ -487,7 +489,7 @@ function applyRankUps(d) {
   for (const [vkey, slot] of Object.entries(d.virtues)) {
     if (!slot.bonded || slot.pendingBreak) continue;
     const q = qualifiedRank(slot, vkey);
-    if (q > slot.rank) { slot.rank = q; ups.push(vkey); pushLog(d, `${VIRTUES[vkey].name} → Bond ${q}.`); }
+    if (q > slot.rank) { slot.rank = q; ups.push(vkey); pushLog(d, `${VIRTUES[vkey]?.name ?? vkey} → Bond ${q}.`); }
   }
   for (const vkey of ups) reactToBond(d, vkey, "bond upgrade");
   return ups;
@@ -515,7 +517,7 @@ export function endMission(d) {
     slot.bonded = false;
     slot.affinity = 0;
     slot.rank = 0;
-    pushLog(d, `${VIRTUES[vkey].name}: broken bond cleared — may be re-linked from scratch.`);
+    pushLog(d, `${VIRTUES[vkey]?.name ?? vkey}: broken bond cleared — may be re-linked from scratch.`);
   }
   resetCounters(d);
   d.soloMissions = hadBond ? 0 : (d.soloMissions | 0) + 1;
@@ -532,7 +534,7 @@ export function endMission(d) {
     }
   }
   refreshAchievements(d); // catches "Nothing Loves the Hunter" once soloMissions ticks up
-  return { ups: ups.map(k => `${VIRTUES[k].name} → Bond ${d.virtues[k].rank}`), haul };
+  return { ups: ups.map(k => `${VIRTUES[k]?.name ?? k} → Bond ${d.virtues[k].rank}`), haul };
 }
 
 /* X2 mod downtime: rank-ups + counter reset + an extra bond slot, without closing a mission. */
@@ -546,7 +548,7 @@ export function timeOff(d) {
   return {
     ok: true,
     msg: ups.length
-      ? `Time off: rank-ups — ${ups.map(k => `${VIRTUES[k].name} → Bond ${d.virtues[k].rank}`).join(", ")}. +1 bond slot.`
+      ? `Time off: rank-ups — ${ups.map(k => `${VIRTUES[k]?.name ?? k} → Bond ${d.virtues[k].rank}`).join(", ")}. +1 bond slot.`
       : "Time off: limits reset, +1 bond slot. No rank-ups."
   };
 }
