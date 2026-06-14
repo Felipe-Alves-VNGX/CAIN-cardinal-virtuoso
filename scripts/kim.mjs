@@ -25,7 +25,9 @@ function renderTpl(path, data) {
 }
 
 function portraitPath(key, v) {
-  return `modules/${MOD}/${v.portrait || `img/virtues/${key}.webp`}`;
+  // Only emit a path when a real portrait override exists; otherwise the
+  // template falls back to the glyph and we avoid a guaranteed 404 request.
+  return v.portrait ? `modules/${MOD}/${v.portrait}` : "";
 }
 
 /* Localize helpers with a safe fallback to the key if i18n isn't ready. */
@@ -219,6 +221,7 @@ export class KimController {
       isGM: game.user.isGM, canWrite: this.canWrite(),
       mission: d.mission, codename: d.codename, hqStock: d.hqStock, x2mod: d.x2mod,
       bondsUsed: bondedCount(d), bondsAllowed: bondSlotsAllowed(d),
+      bondsOver: bondedCount(d) > bondSlotsAllowed(d),
       contacts,
       noCharacter: !game.user.isGM && !actor,
       noBonds: !game.user.isGM && !!actor && bondedKeys.size === 0
@@ -237,11 +240,15 @@ export class KimController {
     const { bondedKeys } = this.bondInfo();
     const slot = bondedKeys.has(key) ? { ...d.virtues[key], bonded: true } : d.virtues[key];
     const st = relStatus(slot);
+    const reqNext = slot.rank < 3 ? rankRequirement(slot, slot.rank + 1, key) : null;
+    const affPct = (!reqNext || reqNext <= 0)
+      ? 100 : Math.max(0, Math.min(100, Math.round((slot.affinity / reqNext) * 100)));
     return {
       key, name: v.name, epithet: v.epithet, glyph: v.glyph, portrait: portraitPath(key, v),
       status: st.label, statusClass: st.cls, rankFlavor: RANK_FLAVOR[slot.rank] ?? "",
       bonded: slot.bonded, broken: slot.pendingBreak, affinity: slot.affinity, rank: slot.rank,
-      reqNext: slot.rank < 3 ? rankRequirement(slot, slot.rank + 1, key) : null,
+      affPct, affCrit: slot.pendingBreak || slot.affinity < 0,
+      reqNext,
       bondText: v.bonds[slot.rank] ?? "",
       likes: v.likes, dislikes: v.dislikes, food: v.food, blasphemy: v.blasphemy,
       quirks: (v.quirks ?? []).map((q, i) => ({
@@ -757,15 +764,18 @@ export class KimController {
     const d = this.syncedDossier();
     const codename = body.querySelector('input[name="codename"]')?.value;
     if (codename != null) d.codename = codename;
-    d.x2mod = !!body.querySelector('input[name="x2mod"]')?.checked;
-    d.gateUser = !!body.querySelector('input[name="gateUser"]')?.checked;
-    const num = (name, max, cur) => {
-      const n = parseInt(body.querySelector(`input[name="${name}"]`)?.value ?? cur, 10);
-      return Math.max(0, Math.min(max, isNaN(n) ? 0 : n));
-    };
-    d.covert = num("covert", 9, d.covert);
-    d.cat = num("cat", 9, d.cat);
-    d.hqStock = num("hqStock", RULES.contraband.hqCap, d.hqStock);
+    // Balance levers are GM-only: players may only set their codename.
+    if (game.user.isGM) {
+      d.x2mod = !!body.querySelector('input[name="x2mod"]')?.checked;
+      d.gateUser = !!body.querySelector('input[name="gateUser"]')?.checked;
+      const num = (name, max, cur) => {
+        const n = parseInt(body.querySelector(`input[name="${name}"]`)?.value ?? cur, 10);
+        return Math.max(0, Math.min(max, isNaN(n) ? 0 : n));
+      };
+      d.covert = num("covert", 9, d.covert);
+      d.cat = num("cat", 9, d.cat);
+      d.hqStock = num("hqStock", RULES.contraband.hqCap, d.hqStock);
+    }
     await this.commit(d, { ok: true, msg: "HQ console saved." });
   }
 
@@ -786,7 +796,7 @@ export class KimController {
   }
 
   async onResetDossier() {
-    if (!this.canWrite()) return ui.notifications.warn("No clearance.");
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
     const ok = await foundryConfirm("Wipe this dossier? This cannot be undone.");
     if (!ok) return;
     await this.commit(blankDossier(), { ok: true, msg: "Dossier wiped." });

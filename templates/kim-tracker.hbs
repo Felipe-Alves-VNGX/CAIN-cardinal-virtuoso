@@ -14,7 +14,7 @@
     <div class="cv-trk-head">
       <span class="cv-kim-av">
         <span class="cv-kim-av-glyph">{{glyph}}</span>
-        <img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />
+        {{#if portrait}}<img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />{{/if}}
       </span>
       <span class="cv-trk-id">
         <span class="cv-kim-c-name">{{name}} <em>{{epithet}}</em></span>

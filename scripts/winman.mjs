@@ -35,7 +35,7 @@ export class WindowManager {
     if (opts.height) el.style.height = `${opts.height}px`;
 
     // cascade so stacked windows don't perfectly overlap
-    const step = (this._spawn++ % 6) * 26;
+    const step = (this._spawn++ % 6) * 34;
     const x = opts.x ?? 60 + step;
     const y = opts.y ?? 40 + step;
     el.style.left = `${x}px`;
@@ -45,6 +45,7 @@ export class WindowManager {
       <div class="cv-window-bar">
         <span class="cv-window-ico">${opts.icon ?? ""}</span>
         <span class="cv-window-title">${opts.title ?? ""}</span>
+        <button type="button" class="cv-window-min" aria-label="Minimize">_</button>
         <button type="button" class="cv-window-close" aria-label="Close">✕</button>
       </div>
       <div class="cv-window-body"></div>`;
@@ -57,12 +58,13 @@ export class WindowManager {
     taskBtn.textContent = opts.title ?? id;
     this.taskbar?.appendChild(taskBtn);
 
-    const rec = { el, taskBtn, onClose: opts.onClose };
+    const rec = { el, taskBtn, onClose: opts.onClose, minimized: false };
     this.windows.set(id, rec);
 
     el.querySelector(".cv-window-close").addEventListener("click", () => this.close(id));
+    el.querySelector(".cv-window-min").addEventListener("click", (ev) => { ev.stopPropagation(); this.minimize(id); });
     el.addEventListener("mousedown", () => this.focus(id));
-    taskBtn.addEventListener("click", () => this.focus(id));
+    taskBtn.addEventListener("click", () => this.toggle(id));
     this._wireDrag(el, el.querySelector(".cv-window-bar"));
 
     this.setHtml(id, opts.html ?? "", opts.onBody);
@@ -80,8 +82,37 @@ export class WindowManager {
   focus(id) {
     const rec = this.windows.get(id);
     if (!rec) return;
+    if (rec.minimized) this.restore(id);
     rec.el.style.zIndex = String(++this._z);
-    for (const [k, r] of this.windows) r.taskBtn.classList.toggle("cv-task-active", k === id);
+    for (const [k, r] of this.windows) {
+      const active = k === id;
+      r.taskBtn.classList.toggle("cv-task-active", active);
+      r.el.classList.toggle("cv-window-active", active);
+    }
+  }
+
+  minimize(id) {
+    const rec = this.windows.get(id);
+    if (!rec) return;
+    rec.minimized = true;
+    rec.el.classList.add("cv-window-min-hidden");
+    rec.taskBtn.classList.remove("cv-task-active");
+    rec.el.classList.remove("cv-window-active");
+  }
+
+  restore(id) {
+    const rec = this.windows.get(id);
+    if (!rec) return;
+    rec.minimized = false;
+    rec.el.classList.remove("cv-window-min-hidden");
+  }
+
+  toggle(id) {
+    const rec = this.windows.get(id);
+    if (!rec) return;
+    if (rec.minimized) this.focus(id);
+    else if (rec.el.classList.contains("cv-window-active")) this.minimize(id);
+    else this.focus(id);
   }
 
   close(id) {
