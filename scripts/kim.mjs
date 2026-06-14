@@ -4,17 +4,20 @@
  * shell, driven by a WindowManager. The rules layer (cardinal-virtuoso.mjs) is
  * reused unchanged — KIM is only a view + controller.
  * -------------------------------------------------------------------------- */
-import { VIRTUES, RANK_FLAVOR, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
+import { VIRTUES, CANONICAL_VIRTUES, RANK_FLAVOR, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
 import {
   getDossier, setDossier, wirePortraits,
   applyConversation, sendContraband, scoreContraband, discardContraband,
   applyQuirk, applyAdjustment, applyGift,
+  requestConversation, requestQuirk, approveRequest, denyRequest,
   toggleBond, endMission, timeOff, pushChat,
   rankRequirement, baseRankReq, qualifiedRank, bondedCount, bondSlotsAllowed,
   contrabandHaul, blankDossier, foundryConfirm,
   getRankReqByVirtue, setVirtueRankReq,
-  refreshAchievements, setAchievement, goodEndingTier
+  refreshAchievements, setAchievement, goodEndingTier,
+  saveCustomVirtue, deleteCustomVirtue, setVirtueHidden
 } from "./cardinal-virtuoso.mjs";
+import { relayNotifyGM } from "./relay.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
 const T   = (name) => `modules/${MOD}/templates/${name}`;
@@ -315,9 +318,26 @@ export class KimController {
       id: e.id, item: e.item, glyph: e.glyph,
       name: VIRTUES[e.vkey]?.name ?? e.vkey
     }));
+    const requests = (d.requestQueue ?? []).map(rq => {
+      const v = VIRTUES[rq.vkey];
+      let detail = "";
+      if (rq.kind === "conversation") {
+        const p = rq.payload ?? {};
+        const parts = [];
+        if (p.topicHit === "like") parts.push(loc("cain-cardinal-virtuoso.conv.likedTopic"));
+        if (p.topicHit === "dislike") parts.push(loc("cain-cardinal-virtuoso.conv.dislikedTopic"));
+        if (p.goodTalk) parts.push(loc("cain-cardinal-virtuoso.conv.wentWell"));
+        if (p.connectionHit) parts.push(loc("cain-cardinal-virtuoso.conv.connection"));
+        detail = parts.join(" · ") || loc("cain-cardinal-virtuoso.req.noOutcome");
+      } else if (rq.kind === "quirk") {
+        detail = v?.quirks?.[rq.payload?.qIndex]?.label ?? "";
+      }
+      return { id: rq.id, kind: rq.kind, name: v?.name ?? rq.vkey, glyph: v?.glyph ?? "?", detail };
+    });
     return {
       isGM: game.user.isGM, who: this.targetUser.name,
       queue, hasQueue: queue.length > 0,
+      requests, hasRequests: requests.length > 0,
       cats: [
         { kind: "favorite", label: loc("cain-cardinal-virtuoso.drop.favorite"), delta: `+${r.favorite}` },
         { kind: "like",     label: loc("cain-cardinal-virtuoso.drop.like"),     delta: `+${r.like}` },
@@ -475,6 +495,21 @@ export class KimController {
     };
   }
 
+  virtuesCtx() {
+    const hidden = new Set(game.settings.get(MOD, "hiddenVirtues") || []);
+    const custom = game.settings.get(MOD, "customVirtues") || {};
+    const canonical = Object.entries(CANONICAL_VIRTUES).map(([key, v]) => ({
+      key, name: v.name, epithet: v.epithet, glyph: v.glyph, hidden: hidden.has(key)
+    }));
+    const customList = Object.entries(custom).map(([key, v]) => ({
+      key, name: v.name, epithet: v.epithet, glyph: v.glyph,
+      likes: (v.likes || []).join(", "), dislikes: (v.dislikes || []).join(", "),
+      food: (v.food || []).join(", "), blasphemy: v.blasphemy || "",
+      bond0: v.bonds?.[0] || "", bond1: v.bonds?.[1] || "", bond2: v.bonds?.[2] || "", bond3: v.bonds?.[3] || ""
+    }));
+    return { isGM: game.user.isGM, canonical, customList };
+  }
+
   /* ── window openers ── */
   async openContacts() {
     const id = "kim-contacts";
@@ -565,6 +600,18 @@ export class KimController {
     });
   }
 
+  async openVirtues() {
+    if (!game.user.isGM) return;
+    const id = "kim-virtues";
+    const html = await renderTpl(T("kim-virtues.hbs"), this.virtuesCtx());
+    this._open.add(id);
+    this.wm.open(id, {
+      title: loc("cain-cardinal-virtuoso.virt.title"), icon: "⛨", width: 460, height: 620,
+      html, onBody: (b) => this.wireVirtues(b),
+      onClose: () => this._open.delete(id)
+    });
+  }
+
   /* ── re-render every open KIM window after a state change ── */
   async refresh() {
     for (const id of [...this._open]) {
@@ -591,6 +638,8 @@ export class KimController {
         });
       } else if (id === "kim-contra-review") {
         this.wm.setHtml(id, await renderTpl(T("kim-contraband-review.hbs"), this.contrabandReviewCtx()), (b) => this.wireContrabandReview(b));
+      } else if (id === "kim-virtues") {
+        this.wm.setHtml(id, await renderTpl(T("kim-virtues.hbs"), this.virtuesCtx()), (b) => this.wireVirtues(b));
       } else if (id.startsWith("kim-conv-")) {
         const key = id.slice("kim-conv-".length);
         const prev = this.wm.bodyEl(id)?.querySelector('input[name="msg"]')?.value ?? "";
@@ -636,6 +685,7 @@ export class KimController {
       openHQ:      () => this.openHQ(),
       openTracker: () => this.openTracker(),
       openAchievements: () => this.openAchievements(),
+      openVirtues: () => this.openVirtues(),
       endMission:  () => this.onEndMission(),
       timeOff:     () => this.onTimeOff()
     });
@@ -666,7 +716,9 @@ export class KimController {
     this._delegate(body, {
       scoreCat: (ev, el)    => this.onScoreContraband(el.dataset.id, el.dataset.kind, null),
       scoreVal: (ev, el, b) => this.onScoreContraband(el.dataset.id, null, b),
-      discardContra: (ev, el) => this.onDiscardContraband(el.dataset.id)
+      discardContra: (ev, el) => this.onDiscardContraband(el.dataset.id),
+      approveReq: (ev, el) => this.onApproveRequest(el.dataset.id),
+      denyReq:    (ev, el) => this.onDenyRequest(el.dataset.id)
     });
   }
 
@@ -682,6 +734,7 @@ export class KimController {
       toggleBond:  (ev, el) => this.onToggleBond(el.dataset.virtue),
       openDrop:    (ev, el) => this.openContraband(el.dataset.virtue),
       quirk:       (ev, el) => this.onQuirk(el.dataset.virtue, Number(el.dataset.q)),
+      reqQuirk:    (ev, el) => this.onRequestQuirk(el.dataset.virtue, Number(el.dataset.q)),
       adjust:      (ev, el, b) => this.onAdjust(el.dataset.virtue, b),
       openProfile: (ev, el) => this.openProfile(el.dataset.virtue)
     });
@@ -691,6 +744,7 @@ export class KimController {
     this._delegate(body, {
       send:        (ev, el, b) => this.onSend(el.dataset.virtue, b),
       conv:        (ev, el, b) => this.onConv(el.dataset.virtue, b),
+      reqConv:     (ev, el, b) => this.onRequestConv(el.dataset.virtue, b),
       openProfile: (ev, el) => this.openProfile(el.dataset.virtue)
     });
     const input = body.querySelector('input[name="msg"]');
@@ -752,6 +806,87 @@ export class KimController {
     await this.commit(d, discardContraband(d, entryId));
   }
 
+  async onApproveRequest(reqId) {
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
+    if (!reqId) return;
+    const d = this.syncedDossier();
+    await this.commit(d, approveRequest(d, reqId));
+  }
+
+  async onDenyRequest(reqId) {
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
+    if (!reqId) return;
+    const d = this.syncedDossier();
+    await this.commit(d, denyRequest(d, reqId));
+  }
+
+  /* ── homebrew Virtue Designer (GM) ── */
+  wireVirtues(body) {
+    this._delegate(body, {
+      toggleHidden: (ev, el) => this.onToggleHidden(el.dataset.key, el.checked),
+      editCustom:   (ev, el, b) => this.fillCustomForm(b, el.dataset.key),
+      deleteCustom: (ev, el) => this.onDeleteCustom(el.dataset.key),
+      saveCustom:   (ev, el, b) => this.onSaveCustom(b)
+    });
+  }
+
+  async onToggleHidden(key, hidden) {
+    if (!game.user.isGM) return;
+    await setVirtueHidden(key, !!hidden);
+    await this.refresh();
+  }
+
+  async onDeleteCustom(key) {
+    if (!game.user.isGM) return;
+    const ok = await foundryConfirm(fmt("cain-cardinal-virtuoso.virt.delAsk", { key }));
+    if (!ok) return;
+    await deleteCustomVirtue(key);
+    await this.refresh();
+  }
+
+  fillCustomForm(body, key) {
+    const custom = game.settings.get(MOD, "customVirtues") || {};
+    const v = custom[key]; if (!v) return;
+    const set = (n, val) => { const el = body.querySelector(`[name="${n}"]`); if (el) el.value = val; };
+    set("vkey", key); set("vname", v.name); set("vepithet", v.epithet); set("vglyph", v.glyph);
+    set("vlikes", (v.likes||[]).join(", ")); set("vdislikes", (v.dislikes||[]).join(", "));
+    set("vfood", (v.food||[]).join(", ")); set("vblasphemy", v.blasphemy||"");
+    set("vbond0", v.bonds?.[0]||""); set("vbond1", v.bonds?.[1]||"");
+    set("vbond2", v.bonds?.[2]||""); set("vbond3", v.bonds?.[3]||"");
+    set("vquirks", (v.quirks||[]).map(q => `${q.label}|${q.delta}${q.perMission?`|${q.perMission}`:""}`).join("\n"));
+    set("vreactions", Object.entries(v.bondReactions||{}).map(([k,dl]) => `${k}|${dl}`).join("\n"));
+  }
+
+  async onSaveCustom(body) {
+    if (!game.user.isGM) return;
+    const g = (n) => body.querySelector(`[name="${n}"]`)?.value?.trim() ?? "";
+    const key = g("vkey").toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!key) return ui.notifications.warn(loc("cain-cardinal-virtuoso.virt.needKey"));
+    // A custom key may intentionally shadow a canonical Virtue (override merge in rebuildVirtues).
+    const csv = (s) => s.split(",").map(x => x.trim()).filter(Boolean);
+    const quirks = g("vquirks").split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+      const [label, delta, perMission] = l.split("|").map(x => x?.trim());
+      const q = { label: label || "?", delta: parseInt(delta, 10) || 0 };
+      const pm = parseInt(perMission, 10); if (Number.isFinite(pm) && pm > 0) q.perMission = pm;
+      return q;
+    });
+    const bondReactions = {};
+    for (const l of g("vreactions").split("\n").map(x => x.trim()).filter(Boolean)) {
+      const [tk, dl] = l.split("|").map(x => x?.trim());
+      const n = parseInt(dl, 10); if (tk && Number.isFinite(n)) bondReactions[tk] = n;
+    }
+    const def = {
+      name: g("vname") || key, epithet: g("vepithet"), glyph: g("vglyph") || "?", portrait: "",
+      likes: csv(g("vlikes")), dislikes: csv(g("vdislikes")), food: csv(g("vfood")),
+      blasphemy: g("vblasphemy") || "—",
+      bonds: { 0: g("vbond0"), 1: g("vbond1"), 2: g("vbond2"), 3: g("vbond3") },
+      quirks, bondReactions
+    };
+    await saveCustomVirtue(key, def);
+    ui.notifications.info(fmt("cain-cardinal-virtuoso.virt.saved", { name: def.name }));
+    await this.refresh();
+  }
+
   /* Send an inventory gift item: apply its automated effect, then spend one. */
   async onDropGift(body) {
     if (!this.canWrite()) return ui.notifications.warn("No clearance.");
@@ -776,6 +911,16 @@ export class KimController {
     await this.commit(d, applyQuirk(d, key, qIndex));
   }
 
+  async onRequestQuirk(key, qIndex) {
+    if (!this.canWrite() || game.user.isGM) return;
+    const d = this.syncedDossier();
+    const r = requestQuirk(d, key, qIndex);
+    if (await this.commit(d, r)) {
+      const label = VIRTUES[key]?.quirks?.[qIndex]?.label ?? "";
+      relayNotifyGM({ fromUserId: game.user.id, label: fmt("cain-cardinal-virtuoso.req.notifyQuirk", { name: VIRTUES[key].name, quirk: label }) });
+    }
+  }
+
   async onAdjust(key, body) {
     if (!game.user.isGM) return ui.notifications.warn("No clearance.");
     const delta = parseInt(body.querySelector(`input[name="adj-${key}"]`)?.value, 10) || 0;
@@ -796,6 +941,18 @@ export class KimController {
       topicHit, goodTalk: get("good"), connectionHit: get("conn")
     });
     await this.commit(d, r);
+  }
+
+  async onRequestConv(key, body) {
+    if (!key || !this.canWrite() || game.user.isGM) return;
+    const box = body.querySelector(`.cv-conv-checks[data-virtue="${key}"]`);
+    const get = (n) => !!box?.querySelector(`input[data-cv="${n}"]`)?.checked;
+    const d = this.syncedDossier();
+    const topicHit = get("dislike") ? "dislike" : (get("topic") ? "like" : null);
+    const r = requestConversation(d, key, { topicHit, goodTalk: get("good"), connectionHit: get("conn") });
+    if (await this.commit(d, r)) {
+      relayNotifyGM({ fromUserId: game.user.id, label: fmt("cain-cardinal-virtuoso.req.notifyConv", { name: VIRTUES[key].name }) });
+    }
   }
 
   async onSend(key, body) {

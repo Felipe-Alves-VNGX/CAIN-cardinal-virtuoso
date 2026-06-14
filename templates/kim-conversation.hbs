@@ -47,6 +47,19 @@
     <button type="button" class="cv-btn cv-btn-on" data-action="conv" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.conv.markConv'}}</button>
   </div>
   {{/if}}
+
+  {{#unless isGM}}
+  <div class="cv-kim-marks cv-kim-req">
+    <div class="cv-kim-marks-lbl">{{localize 'cain-cardinal-virtuoso.req.askConv'}} <small>({{convUsed}}/{{convCap}})</small></div>
+    <div class="cv-conv-checks" data-virtue="{{key}}">
+      <label><input type="checkbox" data-cv="topic" /> {{localize 'cain-cardinal-virtuoso.conv.likedTopic'}} +2</label>
+      <label><input type="checkbox" data-cv="dislike" /> {{localize 'cain-cardinal-virtuoso.conv.dislikedTopic'}} −2</label>
+      <label><input type="checkbox" data-cv="good" /> {{localize 'cain-cardinal-virtuoso.conv.wentWell'}} +2</label>
+      <label><input type="checkbox" data-cv="conn" /> {{localize 'cain-cardinal-virtuoso.conv.connection'}} +2</label>
+    </div>
+    <button type="button" class="cv-btn cv-btn-on" data-action="reqConv" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.req.send'}}</button>
+  </div>
+  {{/unless}}
   {{/if}}
 
 </div>

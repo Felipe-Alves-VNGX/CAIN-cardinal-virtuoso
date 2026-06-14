@@ -1,11 +1,14 @@
 # CAIN — Cardinal Virtuoso · Especificação Funcional
 
-Versão do módulo: **1.5.0** · Compatibilidade Foundry: **11–14** (verificado 13).
+Versão do módulo: **1.11.0** · Compatibilidade Foundry: **11–14** (verificado 13).
 
 Tracker fan-made de afinidade/vínculo **SEER + TEMERITY** para o TTRPG CAIN, como
 módulo Foundry VTT. Esta spec descreve o modelo de dados, as regras e os fluxos
 implementados em `scripts/`. Fonte de verdade das regras: `scripts/data.mjs`
 (`RULES`, `VIRTUES`) e `scripts/cardinal-virtuoso.mjs` (mutações).
+
+> As 9 Virtues são o conjunto **canônico** (`CANONICAL_VIRTUES`). A partir da 1.12
+> o conjunto **efetivo** (`VIRTUES`) pode ser alterado por homebrew — ver §10.
 
 ---
 
@@ -44,7 +47,11 @@ Persistido em `user.flags["cain-cardinal-virtuoso"].dossier`.
   hqStock: 0,        // estoque de contrabando disponível (cap 6)
   extraBonds: 0,     // slots extras de vínculo (de time off)
   log: [],           // event log (máx 40)
-  virtues: { <key>: <slot> }   // 9 Virtues
+  virtues: { <key>: <slot> },  // Virtues do conjunto efetivo
+  achievements: {},  // key → true; conquista desbloqueada (auto ou GM) — §9.x
+  soloMissions: 0,   // missões consecutivas concluídas sem vínculo ativo
+  contrabandQueue: [], // contrabando enviado, aguardando pontuação do GM — §5.3
+  requestQueue: []     // pedidos de Conversation/Quirk aguardando aprovação — §11
 }
 ```
 
@@ -59,7 +66,16 @@ Persistido em `user.flags["cain-cardinal-virtuoso"].dossier`.
   convUsed: 0,         // conversations usadas na missão
   contraUsed: 0,       // contrabandos usados na missão
   quirkUses: {},       // { <qIndex>: contagem } por missão
-  chat: []             // histórico de conversa livre (máx 40)
+  chat: [],            // histórico de conversa livre (máx 40)
+  missionLoss: 0,      // afinidade total perdida na missão (conquista "The Fumbler")
+  buffs: {             // buffs concedidos por gifts (§8)
+    apology: false,              // escudo de perda ativo
+    apologyUsed: false,          // 1ª perda já amortecida (−2 → depois −1)
+    apologyExpiresMission: 0,    // missão em que o escudo expira
+    page: false,                 // Page of One-liners: ignora 1 tópico detestado
+    journal: false,              // avisa antes da 1ª ação de perda na missão
+    journalWarnedThisMission: false
+  }
 }
 ```
 
@@ -87,6 +103,9 @@ logMax:        40
 Vol. 1 (6) + adições do Harpocrates Dossier (3). Cada Virtue tem `name`, `epithet`,
 `glyph`, `likes`, `dislikes`, `food`, `blasphemy`, `bonds` (0–3), `quirks` e
 `bondReactions`. Retrato auto-carregado de `img/virtues/<key>.webp` com fallback ao glifo.
+
+> Estas 9 são o conjunto **canônico** (`CANONICAL_VIRTUES`). O conjunto efetivo
+> (`VIRTUES`) pode ocultar canônicas e adicionar homebrew — ver §10.
 
 | key | Nome | Epíteto | Glifo | Blasfêmia | Reações de vínculo |
 |---|---|---|---|---|---|
@@ -122,13 +141,21 @@ Todas as mutações retornam `{ ok, msg }`, mutam o dossiê in-place e passam po
 - Delta: `topicHit "like" +2 / "dislike" −2` + `goodTalk +2` + `connectionHit +2`.
 - `convUsed += 1`; `finalize`.
 
-### 5.3 `applyContraband(d, vkey, kind)`
-- `kind ∈ {favorite, like, dislike, neutral, hatemail}`.
-- Não-vinculado → só `hatemail`. `pendingBreak` → negado.
-- Não-hatemail: `contraUsed ≥ cap` (2 ou 3 com X2) → negado.
-- `hqStock ≤ 0` → negado (toda ação gasta 1 de estoque).
-- Deltas: favorite/like +3, neutral +1, dislike −3, hatemail = `min(0, −3)` = −3.
-- Hatemail **não** incrementa `contraUsed` (ignora o limite) mas gasta estoque.
+### 5.3 Contraband — fluxo enviar/revisar (1.11)
+A `applyContraband` monolítica foi substituída por um fluxo de duas etapas:
+
+- `sendContraband(d, vkey, item, glyph)` — ação do **player**: valida
+  vinculado / não-`pendingBreak` / `contraUsed ≥ cap` / `hqStock ≤ 0`; gasta 1 de
+  estoque e 1 slot de contrabando; enfileira em `contrabandQueue`
+  (`{id, vkey, item, glyph, ts}`) **sem** aplicar afinidade.
+- `scoreContraband(d, entryId, {kind, value})` — ação do **GM**: aplica o delta
+  (categoria FAV/LIKE/NEUTRAL/DISLIKE via `CONTRA_DELTA`, ou `value` numérico
+  livre), amortecido por Apology Note (`withShield`), e desenfileira; `finalize`.
+- `discardContraband(d, entryId)` — GM descarta sem pontuar.
+
+### 5.3.1 `withShield(slot, delta)` — escudo de Apology Note
+Em perdas (`delta < 0`) com `buffs.apology` ativo, reduz a perda em 2 na primeira
+vez e em 1 nas seguintes (`apologyUsed`). No-op em ganhos ou sem buff.
 
 ### 5.4 `applyQuirk(d, vkey, qIndex)`
 - Bloqueios: não-vinculado / `pendingBreak`; quirk inexistente; `perMission` atingido.
@@ -172,12 +199,51 @@ Todas as mutações retornam `{ ok, msg }`, mutam o dossiê in-place e passam po
 
 ---
 
+## 5b. Features 1.6–1.11
+
+### 5b.1 Gifts automatizados (1.8) — `applyGift(d, vkey, giftKey, {fresh})`
+6 gifts em `GIFTS` (`scripts/data.mjs`), criados como itens CAIN num compêndio de
+mundo (`ensureGiftCompendium`, GM-only, idempotente) com flag `gift:<key>`. Efeitos:
+- `flat` — `affinity += base (+ freshBonus se "fresh")` (Heated Blanket, Deployment Pass).
+- `rankOrPlus` — sobe um rank se a afinidade já qualifica, senão `+plus` (Heartfelt Note).
+- `buffConversation` — arma `buffs.page` (Page of One-liners).
+- `buffApology` — arma `buffs.apology` até `mission+1` (Apology Note).
+- `buffJournal` — arma `buffs.journal` (Well-Organized Journal).
+
+### 5b.2 Achievements & Good Ending Points (1.9)
+`ACHIEVEMENTS` (`scripts/data.mjs`) lista conquistas `group: "good" | "bad"`.
+- `refreshAchievements(d)` aplica detectores `auto` (idempotente; uma vez desbloqueada,
+  persiste em `d.achievements`). Códigos: `bond3:<key>`, `heartBreaker`, `fumbler`,
+  `hunter` (via `soloMissions`), `besoDeTres`.
+- `setAchievement(d, key, on)` — toggle do GM para conquistas subjetivas (`auto:null`).
+- Good Ending Points = nº de conquistas `group:"good"` desbloqueadas na party;
+  `goodEndingTier(points)` resolve a recompensa em `GOOD_ENDING_REWARDS`.
+
+### 5b.3 Trackers por Virtue (1.7)
+Requisitos de rank podem ser sobrescritos por Virtue via setting `rankReqByVirtue`
+(`{ <key>: {1,2,3} }`), editado na janela Tracker do KIM. `baseRankReq(rank, vkey)`
+usa o override; senão cai em `RULES.rankReq`. `rankRequirement` soma a penalidade de
+quebra. Janela read-only para player, editável para GM.
+
+### 5b.4 i18n e confirmações (1.6)
+UI localizada en / pt-BR (`lang/*.json`). End Mission pede confirmação
+(`foundryConfirm`, via `DialogV2` com fallback `Dialog`).
+
+### 5b.5 HQ Console e foco de janela (1.10)
+HQ Console (codename, mods X2/Gate, covert/CAT, estoque) é GM-gated. O window
+manager interno suporta focar/minimizar janelas da desktop KIM.
+
+---
+
 ## 6. Configurações (Game Settings → Cardinal Virtuoso)
 
 | Setting | Escopo | Tipo | Padrão | Efeito |
 |---|---|---|---|---|
 | `rankReq` | world | String | `"5,10,18"` | Requisitos de afinidade I/II/III (parseado em `RULES.rankReq`) |
 | `enforcePacing` | world | Boolean | `true` | Liga/desliga o ritmo de vínculos (GM sempre ignora) |
+| `rankReqByVirtue` | world | Object | `{}` | Overrides de requisito por Virtue (editado na janela Tracker; `config:false`) |
+| `customVirtues` | world | Object | `{}` | Virtudes homebrew `{ <key>: <def> }` (editado no Designer de Virtudes; `config:false`) |
+| `hiddenVirtues` | world | Array | `[]` | Chaves canônicas ocultadas pelo GM (`config:false`) |
 
 ---
 
@@ -212,4 +278,72 @@ Todas as mutações retornam `{ ok, msg }`, mutam o dossiê in-place e passam po
 ## 9. Itens não implementados (roadmap)
 
 - Export SQLite (cross-system / Power BI) como feature server-side separada.
-- Relay player→GM via socketlib reusando `applyConversation`/`applyContraband`/`endMission`.
+
+Entregue na 1.12:
+- **Relay player→GM via socketlib** — implementado (ver §11).
+- **Virtudes homebrew (editor in-app)** — implementado (ver §10).
+
+---
+
+## 10. Virtudes homebrew (1.12)
+
+As 9 Virtues canônicas deixam de ser fixas: o GM pode adicionar Virtudes custom e
+ocultar/substituir canônicas, persistido em settings de mundo.
+
+### 10.1 Resolver
+- `CANONICAL_VIRTUES` — as 9 fixas (literal em `scripts/data.mjs`).
+- `VIRTUES` — o conjunto **efetivo**, um objeto **mutado in-place** (referência
+  estável; todos os `import { VIRTUES }` seguem válidos).
+- `rebuildVirtues({ custom, hidden })` — limpa `VIRTUES` e repovoa = canônicas
+  não-ocultas + custom (custom estende/sobrescreve por chave). Chamado no `ready`
+  e após cada edição.
+
+### 10.2 Settings
+- `customVirtues` (Object, world, `config:false`) — `{ <key>: <def> }`.
+- `hiddenVirtues` (Array, world, `config:false`) — chaves canônicas ocultadas.
+
+### 10.3 Integridade
+- `reactToBond` e mensagens usam `VIRTUES[k]?.name ?? k`; uma Virtue ausente
+  (oculta) é **pulada** nas reações (`continue`) e seu slot antigo sobrevive inerte.
+- Achievements `bond3:*` continuam atrelados às chaves canônicas.
+- Retratos: custom usa o campo `portrait` (vazio → fallback ao glifo).
+
+### 10.4 Editor (GM)
+Janela `kim-virtues` (GM-only): lista canônicas com toggle de ocultar; CRUD das
+custom (key, name, epithet, glyph, likes/dislikes/food, blasphemy, bonds 0–3,
+quirks `label|delta|perMission`, bondReactions `targetKey|delta`). Helpers:
+`saveCustomVirtue`, `deleteCustomVirtue`, `setVirtueHidden`, `isCanonical`.
+
+---
+
+## 11. Relay player→GM (requests) (1.12)
+
+Players só editam o próprio dossiê — então Conversation e Quirk (que aplicam
+afinidade) eram GM-only. O relay reintroduz a iniciativa do player num modelo
+**pedido → aprovação**, espelhando o fluxo de contraband (§5.3): o player enfileira,
+o GM resolve. Mantém o GM no controle do balanceamento.
+
+### 11.1 Modelo
+- `dossier.requestQueue: [{ id, kind, vkey, payload, ts }]`, `kind ∈ {"conversation","quirk"}`.
+  - `payload` de conversation: `{ topicHit, goodTalk, connectionHit }`.
+  - `payload` de quirk: `{ qIndex }`.
+
+### 11.2 Slot gasto no pedido
+`requestConversation` incrementa `convUsed`; `requestQuirk` incrementa
+`quirkUses[qIndex]` — espelhando `sendContraband`. `denyRequest` faz refund do slot.
+
+### 11.3 Aprovação
+`approveRequest` reusa o cálculo de `convDelta`/`applyQuirk` **sem** re-incrementar o
+slot já gasto, aplicando afinidade + `finalize`, e desenfileira.
+> **Nuance do buff Page:** como `convDelta` roda na **aprovação**, o `buffs.page`
+> (Page of One-liners) é consumido quando o GM aprova a Conversation, não no pedido.
+
+### 11.4 Transporte
+`scripts/relay.mjs` usa socketlib (`executeForAllGMs("notifyGM", …)`) para um toast
+em tempo real ao GM. **Graceful degrade** sem socketlib: a fila já persiste na flag
+do player, e o hook `updateUser` re-renderiza a Review do GM que estiver com aquele
+usuário selecionado. socketlib é dependência **recomendada**, não obrigatória.
+
+### 11.5 Permissões
+O player escreve só a própria flag (enfileira); o GM (que escreve qualquer flag)
+aprova (`approveRequest`) ou nega (`denyRequest`).

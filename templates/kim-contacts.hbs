@@ -64,6 +64,7 @@
     </div>
     <div class="cv-kim-foot-row">
       <button type="button" class="cv-btn" data-action="openAchievements">🏆 {{localize 'cain-cardinal-virtuoso.kim.achievements'}}</button>
+      {{#if isGM}}<button type="button" class="cv-btn" data-action="openVirtues" title="{{localize 'cain-cardinal-virtuoso.virt.title'}}">⛨ {{localize 'cain-cardinal-virtuoso.virt.short'}}</button>{{/if}}
     </div>
     {{#if canWrite}}
     <div class="cv-kim-foot-row">

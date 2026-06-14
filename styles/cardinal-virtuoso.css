@@ -745,3 +745,14 @@
 .cv-ach-desc { font-size: 9px; color: var(--text-dim); line-height: 1.3; }
 .cv-ach-toggle { flex: none; }
 .cv-ach-auto { flex: none; color: var(--text-dim); font-size: 11px; }
+
+/* Virtue Designer + relay review */
+.cv-virt-list { list-style: none; margin: 4px 0; padding: 0; }
+.cv-virt-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-bottom: 1px dotted var(--gray-d); }
+.cv-virt-glyph { width: 20px; text-align: center; opacity: .8; }
+.cv-virt-name { flex: 1; font-size: 11px; }
+.cv-virt-name small { color: var(--text-dim); }
+.cv-virt-hide { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+.cv-virt-form { display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+.cv-virt-form label { display: flex; flex-direction: column; font-size: 10px; gap: 2px; }
+.cv-kim-req { border-top: 1px dashed var(--gray-d); }

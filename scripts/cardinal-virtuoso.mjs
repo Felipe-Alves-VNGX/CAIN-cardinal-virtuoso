@@ -1,4 +1,4 @@
-import { VIRTUES, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
+import { VIRTUES, CANONICAL_VIRTUES, rebuildVirtues, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
 const FLAG = "dossier";
@@ -37,7 +37,10 @@ export function blankDossier() {
     soloMissions: 0,  // consecutive completed missions with no active bond
     // Contraband the player has sent but the GM hasn't scored yet. Each entry:
     // { id, vkey, item, glyph, ts }. Affinity is applied only when the GM scores it.
-    contrabandQueue: []
+    contrabandQueue: [],
+    // Requests the player sent for the GM to approve (Conversation/Quirk). Each:
+    // { id, kind, vkey, payload, ts }. Affinity is applied only on approval.
+    requestQueue: []
   };
 }
 
@@ -81,6 +84,31 @@ export async function setVirtueRankReq(vkey, trip) {
   try { await game.settings.set(MOD, "rankReqByVirtue", RANK_REQ_BY_VIRTUE); }
   catch (e) { console.warn(`${MOD} | could not persist per-virtue rank reqs`, e); }
 }
+
+/* ----------------------------------------------------------------------------
+ * HOMEBREW VIRTUES — GM-managed custom set persisted in world settings, applied
+ * by rebuilding the in-place VIRTUES object so all live references update.
+ * -------------------------------------------------------------------------- */
+export async function saveCustomVirtue(key, def) {
+  const all = { ...(game.settings.get(MOD, "customVirtues") || {}) };
+  all[key] = def;
+  await game.settings.set(MOD, "customVirtues", all);
+  rebuildVirtues({ custom: all, hidden: game.settings.get(MOD, "hiddenVirtues") || [] });
+}
+export async function deleteCustomVirtue(key) {
+  const all = { ...(game.settings.get(MOD, "customVirtues") || {}) };
+  delete all[key];
+  await game.settings.set(MOD, "customVirtues", all);
+  rebuildVirtues({ custom: all, hidden: game.settings.get(MOD, "hiddenVirtues") || [] });
+}
+export async function setVirtueHidden(key, hidden) {
+  const set = new Set(game.settings.get(MOD, "hiddenVirtues") || []);
+  if (hidden) set.add(key); else set.delete(key);
+  const arr = [...set];
+  await game.settings.set(MOD, "hiddenVirtues", arr);
+  rebuildVirtues({ custom: game.settings.get(MOD, "customVirtues") || {}, hidden: arr });
+}
+export function isCanonical(key) { return key in CANONICAL_VIRTUES; }
 
 /* Effective minimum affinity for a rank, including broken-bond penalties.
    Pass vkey to honor per-virtue overrides; without it, the global tuning applies. */
@@ -188,13 +216,11 @@ function withShield(slot, delta) {
   return -Math.max(0, -delta - reduction);
 }
 
-export function applyConversation(d, vkey, { topicHit, goodTalk, connectionHit }) {
-  const slot = d.virtues[vkey];
-  const lock = slotLocked(slot);
-  if (lock) return { ok: false, msg: lock };
-  if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
-  let delta = 0;
-  let note = "";
+/* Pure outcome scoring for a Conversation: returns { delta, note } honoring the
+   Page-of-One-liners buff (consumes it on a disliked topic) and the Apology
+   shield. Does NOT touch convUsed or affinity — callers apply and finalize. */
+function convDelta(slot, { topicHit, goodTalk, connectionHit }) {
+  let delta = 0, note = "";
   if (topicHit === "like") delta += RULES.conv.topic;
   if (topicHit === "dislike") {
     if (slot.buffs?.page) { slot.buffs.page = false; note = " (Page of One-liners: disliked-topic penalty ignored, +1D)"; }
@@ -202,7 +228,15 @@ export function applyConversation(d, vkey, { topicHit, goodTalk, connectionHit }
   }
   if (goodTalk) delta += RULES.conv.goodTalk;
   if (connectionHit) delta += RULES.conv.connection;
-  delta = withShield(slot, delta);
+  return { delta: withShield(slot, delta), note };
+}
+
+export function applyConversation(d, vkey, outcome) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
+  const { delta, note } = convDelta(slot, outcome);
   slot.affinity += delta;
   if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
   slot.convUsed += 1;
@@ -285,6 +319,91 @@ export function applyQuirk(d, vkey, qIndex) {
   return finalize(d, vkey, `${VIRTUES[vkey].name} — Quirk "${quirk.label}": ${qd >= 0 ? "+" : ""}${qd} affinity.`);
 }
 
+/* ----------------------------------------------------------------------------
+ * REQUEST RELAY — player enqueues, GM approves. Spends the per-mission slot at
+ * request time (like sendContraband); deny refunds it; approve scores it.
+ * -------------------------------------------------------------------------- */
+function newReqId() { return `rq-${Date.now()}-${Math.floor(Math.random() * 1e4)}`; }
+
+/* Player: request a Conversation outcome. Validates like applyConversation but
+   applies NO affinity — spends the slot and queues for GM approval. */
+export function requestConversation(d, vkey, outcome) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
+  slot.convUsed += 1;
+  d.requestQueue ??= [];
+  const id = newReqId();
+  d.requestQueue.push({ id, kind: "conversation", vkey, payload: { ...outcome }, ts: Date.now() });
+  pushLog(d, `${VIRTUES[vkey].name} — Conversation requested (awaiting HQ approval).`);
+  return { ok: true, msg: `Conversation with ${VIRTUES[vkey].name} sent for HQ approval.`, id };
+}
+
+/* Player: request a Quirk. Validates like applyQuirk; spends the per-mission use. */
+export function requestQuirk(d, vkey, qIndex) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  const quirk = VIRTUES[vkey]?.quirks?.[qIndex];
+  if (!quirk) return { ok: false, msg: "Unknown quirk." };
+  const used = slot.quirkUses[qIndex] ?? 0;
+  if (quirk.perMission && used >= quirk.perMission)
+    return { ok: false, msg: `Quirk limit reached (${quirk.perMission}/mission).` };
+  slot.quirkUses[qIndex] = used + 1;
+  d.requestQueue ??= [];
+  const id = newReqId();
+  d.requestQueue.push({ id, kind: "quirk", vkey, payload: { qIndex }, ts: Date.now() });
+  pushLog(d, `${VIRTUES[vkey].name} — Quirk "${quirk.label}" requested (awaiting HQ approval).`);
+  return { ok: true, msg: `Quirk "${quirk.label}" sent for HQ approval.`, id };
+}
+
+/* GM: approve a queued request — applies affinity reusing the scoring logic,
+   WITHOUT re-spending the slot (already spent at request time), then dequeues. */
+export function approveRequest(d, reqId) {
+  d.requestQueue ??= [];
+  const idx = d.requestQueue.findIndex(r => r.id === reqId);
+  if (idx < 0) return { ok: false, msg: "Request not found." };
+  const req = d.requestQueue[idx];
+  const slot = d.virtues[req.vkey];
+  if (!slot) { d.requestQueue.splice(idx, 1); return { ok: false, msg: "Recipient no longer exists." }; }
+  d.requestQueue.splice(idx, 1);
+  if (req.kind === "conversation") {
+    const { delta, note } = convDelta(slot, req.payload ?? {});
+    slot.affinity += delta;
+    if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
+    return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Conversation approved: ${delta >= 0 ? "+" : ""}${delta} affinity.${note}`);
+  }
+  if (req.kind === "quirk") {
+    const quirk = VIRTUES[req.vkey]?.quirks?.[req.payload?.qIndex];
+    if (!quirk) return { ok: false, msg: "Quirk no longer exists." };
+    const qd = withShield(slot, quirk.delta);
+    slot.affinity += qd;
+    if (qd < 0) slot.missionLoss = (slot.missionLoss | 0) - qd;
+    return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Quirk "${quirk.label}" approved: ${qd >= 0 ? "+" : ""}${qd} affinity.`);
+  }
+  return { ok: false, msg: "Unknown request kind." };
+}
+
+/* GM: deny a queued request — refunds the spent slot and dequeues. */
+export function denyRequest(d, reqId) {
+  d.requestQueue ??= [];
+  const idx = d.requestQueue.findIndex(r => r.id === reqId);
+  if (idx < 0) return { ok: false, msg: "Request not found." };
+  const req = d.requestQueue.splice(idx, 1)[0];
+  const slot = d.virtues[req.vkey];
+  if (slot) {
+    if (req.kind === "conversation") slot.convUsed = Math.max(0, (slot.convUsed | 0) - 1);
+    if (req.kind === "quirk") {
+      const qi = req.payload?.qIndex;
+      slot.quirkUses[qi] = Math.max(0, (slot.quirkUses[qi] | 0) - 1);
+    }
+  }
+  const who = VIRTUES[req.vkey]?.name ?? req.vkey;
+  pushLog(d, `${who} — ${req.kind} request denied by HQ (slot refunded).`);
+  return { ok: true, msg: `${req.kind} request denied.` };
+}
+
 /* Admin-only free adjustment (table rulings, undocumented quirks). */
 export function applyAdjustment(d, vkey, delta) {
   const slot = d.virtues[vkey];
@@ -344,12 +463,14 @@ function reactToBond(d, changedKey, why) {
   const notes = [];
   for (const [vkey, slot] of Object.entries(d.virtues)) {
     if (vkey === changedKey || !slot.bonded || slot.pendingBreak) continue;
-    const reactions = VIRTUES[vkey].bondReactions ?? {};
+    const def = VIRTUES[vkey];
+    if (!def) continue; // hidden/removed virtue still stored — skip its reactions
+    const reactions = def.bondReactions ?? {};
     const delta = reactions[changedKey] ?? reactions["*"];
     if (!delta) continue;
     slot.affinity += delta;
     const r = finalize(d, vkey,
-      `${VIRTUES[vkey].name} reacts to your ${why} with ${VIRTUES[changedKey].name}: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+      `${def.name} reacts to your ${why} with ${VIRTUES[changedKey]?.name ?? changedKey}: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
     notes.push(r.msg);
   }
   return notes;
@@ -393,7 +514,7 @@ function applyRankUps(d) {
   for (const [vkey, slot] of Object.entries(d.virtues)) {
     if (!slot.bonded || slot.pendingBreak) continue;
     const q = qualifiedRank(slot, vkey);
-    if (q > slot.rank) { slot.rank = q; ups.push(vkey); pushLog(d, `${VIRTUES[vkey].name} → Bond ${q}.`); }
+    if (q > slot.rank) { slot.rank = q; ups.push(vkey); pushLog(d, `${VIRTUES[vkey]?.name ?? vkey} → Bond ${q}.`); }
   }
   for (const vkey of ups) reactToBond(d, vkey, "bond upgrade");
   return ups;
@@ -421,7 +542,7 @@ export function endMission(d) {
     slot.bonded = false;
     slot.affinity = 0;
     slot.rank = 0;
-    pushLog(d, `${VIRTUES[vkey].name}: broken bond cleared — may be re-linked from scratch.`);
+    pushLog(d, `${VIRTUES[vkey]?.name ?? vkey}: broken bond cleared — may be re-linked from scratch.`);
   }
   resetCounters(d);
   d.soloMissions = hadBond ? 0 : (d.soloMissions | 0) + 1;
@@ -438,7 +559,7 @@ export function endMission(d) {
     }
   }
   refreshAchievements(d); // catches "Nothing Loves the Hunter" once soloMissions ticks up
-  return { ups: ups.map(k => `${VIRTUES[k].name} → Bond ${d.virtues[k].rank}`), haul };
+  return { ups: ups.map(k => `${VIRTUES[k]?.name ?? k} → Bond ${d.virtues[k].rank}`), haul };
 }
 
 /* X2 mod downtime: rank-ups + counter reset + an extra bond slot, without closing a mission. */
@@ -452,7 +573,7 @@ export function timeOff(d) {
   return {
     ok: true,
     msg: ups.length
-      ? `Time off: rank-ups — ${ups.map(k => `${VIRTUES[k].name} → Bond ${d.virtues[k].rank}`).join(", ")}. +1 bond slot.`
+      ? `Time off: rank-ups — ${ups.map(k => `${VIRTUES[k]?.name ?? k} → Bond ${d.virtues[k].rank}`).join(", ")}. +1 bond slot.`
       : "Time off: limits reset, +1 bond slot. No rank-ups."
   };
 }
@@ -542,11 +663,22 @@ Hooks.once("init", () => {
   game.settings.register(MOD, "rankReqByVirtue", {
     scope: "world", config: false, type: Object, default: {}
   });
+  // Homebrew virtues — edited in the KIM Virtue Designer, not here.
+  game.settings.register(MOD, "customVirtues", {
+    scope: "world", config: false, type: Object, default: {}
+  });
+  game.settings.register(MOD, "hiddenVirtues", {
+    scope: "world", config: false, type: Array, default: []
+  });
 });
 
 Hooks.once("ready", () => {
   parseRankReq(game.settings.get(MOD, "rankReq"));
   RANK_REQ_BY_VIRTUE = game.settings.get(MOD, "rankReqByVirtue") || {};
+  rebuildVirtues({
+    custom: game.settings.get(MOD, "customVirtues") || {},
+    hidden: game.settings.get(MOD, "hiddenVirtues") || []
+  });
   game.cainCardinalVirtuoso ??= {};
   // Legacy macro entry point now opens the KIM desktop (the standalone grid was retired in 1.4).
   game.cainCardinalVirtuoso.open = () => game.cainCardinalVirtuoso.openDesktop?.();

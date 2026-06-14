@@ -20,6 +20,10 @@ Then:
 2. Open via the **Cardinal Virtuoso** button in the Token scene-controls,
    or run the macro: `game.cainCardinalVirtuoso.open()`.
 
+**Recommended dependency:** install [socketlib](https://github.com/manuelVo/foundryvtt-socketlib)
+to give the GM live toasts when a player files a request. The request queue still
+works without it — the GM just sees the pending items on opening the HQ Review window.
+
 ## Releases
 Publishing is automated: merging to `main` with a changed `version` in `module.json`
 creates a GitHub release with `module.zip` and a stamped `module.json` attached
@@ -64,5 +68,8 @@ from the Harpocrates Dossier.
 ## Roadmap notes
 - Storage is Foundry-native flags by design. A SQLite export (for cross-system / Power BI use)
   could be a later server-side feature, kept separate from the in-world tracker.
-- Logic is isolated in `applyConversation/applyContraband/endMission`; a future socketlib-based
-  player→GM relay can reuse them unchanged.
+- **Delivered in 1.12:** the socketlib-based player→GM request relay — players send
+  Conversation outcomes and Quirks to an HQ approval queue, and the GM approves/denies
+  them reusing the same scoring logic (`applyConversation`/`applyQuirk`).
+- **Delivered in 1.12:** the homebrew **Virtue Designer** — a GM-only window to add custom
+  Virtues and hide canonical ones, with the effective set rebuilt live from world settings.
