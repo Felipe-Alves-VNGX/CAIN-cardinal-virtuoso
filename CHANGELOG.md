@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.11.0 — GM-gated affinity actions & contraband send/review flow
+- **Affinity actions are now GM-only.** Players can no longer self-score their
+  own bonds. In Conversation, the "speak as Bond" selector and the
+  end-of-talk / mark-result block are hidden from players, and player messages
+  always post as themselves. Quirks become GM-only as well (both the profile
+  template and the `onQuirk` guard).
+- **Dead Drop reworked into a send-then-review flow.** Players now send actual
+  (non-gift) inventory items as contraband. Sending spends one HQ stock unit and
+  a per-mission slot, consumes one unit of the item, and queues it **without**
+  applying any affinity. Gifts keep their special automated flow.
+- **New GM-only "Review Contraband" window.** The GM scores queued items by
+  category (Favorite/Like/Neutral/Dislike) or by a free value, which applies the
+  affinity and dequeues the entry; Discard drops an entry without scoring.
+- Adds `dossier.contrabandQueue` plus `sendContraband` / `scoreContraband` /
+  `discardContraband`, with en + pt-BR localization and styles.
+
+## 1.10.0 — Player-view hardening & desktop UX polish
+- **HQ Console balance levers are GM-only.** The X2 mod, Gate user, Covert, CAT
+  and HQ-stock fields (plus Wipe Dossier) are gated behind `isGM` and enforced on
+  save; players can only edit their own codename.
+- **Desktop UX polish.** Adds a window focus cue and minimize buttons, makes the
+  profile affinity more prominent, surfaces empty-stock and over-bond-limit
+  warnings, widens the window cascade, and removes the guaranteed 404s for
+  missing virtue portraits.
+
 ## 1.9.0 — Special <3 Achievements & Good Ending Points
 - **New Achievements window** (🏆 in the contacts footer). Tracks the dossier's
   "Special <3" achievements in two groups: the 13 good endings (the nine Bond-3
