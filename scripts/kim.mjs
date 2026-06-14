@@ -685,6 +685,7 @@ export class KimController {
       openHQ:      () => this.openHQ(),
       openTracker: () => this.openTracker(),
       openAchievements: () => this.openAchievements(),
+      openVirtues: () => this.openVirtues(),
       endMission:  () => this.onEndMission(),
       timeOff:     () => this.onTimeOff()
     });
