@@ -278,3 +278,37 @@ manager interno suporta focar/minimizar janelas da desktop KIM.
 - Export SQLite (cross-system / Power BI) como feature server-side separada.
 - **Relay player→GM via socketlib** — em implementação nesta versão (ver §11).
 - **Virtudes homebrew (editor in-app)** — em implementação nesta versão (ver §10).
+
+---
+
+## 11. Relay player→GM (requests) (1.12)
+
+Players só editam o próprio dossiê — então Conversation e Quirk (que aplicam
+afinidade) eram GM-only. O relay reintroduz a iniciativa do player num modelo
+**pedido → aprovação**, espelhando o fluxo de contraband (§5.3): o player enfileira,
+o GM resolve. Mantém o GM no controle do balanceamento.
+
+### 11.1 Modelo
+- `dossier.requestQueue: [{ id, kind, vkey, payload, ts }]`, `kind ∈ {"conversation","quirk"}`.
+  - `payload` de conversation: `{ topicHit, goodTalk, connectionHit }`.
+  - `payload` de quirk: `{ qIndex }`.
+
+### 11.2 Slot gasto no pedido
+`requestConversation` incrementa `convUsed`; `requestQuirk` incrementa
+`quirkUses[qIndex]` — espelhando `sendContraband`. `denyRequest` faz refund do slot.
+
+### 11.3 Aprovação
+`approveRequest` reusa o cálculo de `convDelta`/`applyQuirk` **sem** re-incrementar o
+slot já gasto, aplicando afinidade + `finalize`, e desenfileira.
+> **Nuance do buff Page:** como `convDelta` roda na **aprovação**, o `buffs.page`
+> (Page of One-liners) é consumido quando o GM aprova a Conversation, não no pedido.
+
+### 11.4 Transporte
+`scripts/relay.mjs` usa socketlib (`executeForAllGMs("notifyGM", …)`) para um toast
+em tempo real ao GM. **Graceful degrade** sem socketlib: a fila já persiste na flag
+do player, e o hook `updateUser` re-renderiza a Review do GM que estiver com aquele
+usuário selecionado. socketlib é dependência **recomendada**, não obrigatória.
+
+### 11.5 Permissões
+O player escreve só a própria flag (enfileira); o GM (que escreve qualquer flag)
+aprova (`approveRequest`) ou nega (`denyRequest`).

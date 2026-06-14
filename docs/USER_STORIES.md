@@ -297,6 +297,40 @@ comportamento esperado da perspectiva dos atores; os critérios de aceitação
 
 ---
 
+## Épico 11 — Relay player→GM (requests) (1.12)
+
+### US-11.1 — Pedir Conversation (player)
+> **Como** Player com vínculo, **quero** marcar o desfecho de uma Conversation e
+> enviá-la ao HQ, **para** que o GM aprove a afinidade.
+
+**Critérios de aceitação**
+- Valida como `applyConversation` (vinculado, não-`pendingBreak`, `convUsed < cap`).
+- Gasta o slot da missão (`convUsed += 1`); **nenhuma** afinidade é aplicada no pedido.
+- Enfileira em `requestQueue` (`kind:"conversation"`); o GM é notificado.
+
+### US-11.2 — Pedir Quirk (player)
+> **Como** Player, **quero** disparar uma quirk como pedido,
+> **para** que o GM a aprove (respeitando `perMission`).
+
+**Critérios de aceitação**
+- Valida como `applyQuirk`; gasta o uso da quirk; enfileira (`kind:"quirk"`).
+
+### US-11.3 — Aprovar/Negar (GM)
+> **Como** GM, **quero** aprovar ou negar pedidos na janela de Review.
+
+**Critérios de aceitação**
+- **Approve**: aplica via `convDelta`/`applyQuirk` sem re-gastar o slot; desenfileira.
+- **Deny**: faz refund do slot (`convUsed--` / `quirkUses[qi]--`) e desenfileira.
+
+### US-11.4 — Notificação em tempo real
+> **Como** GM online, **quero** um toast quando um pedido chega.
+
+**Critérios de aceitação**
+- Com socketlib: `executeForAllGMs` entrega um toast a todos os GMs online.
+- Sem socketlib: o pedido aparece ao abrir a Review (a fila persiste na flag).
+
+---
+
 ## Backlog / Roadmap (não implementado)
 
 - **R-1** Export para SQLite (uso cross-system / Power BI) como feature server-side separada do tracker in-world.
