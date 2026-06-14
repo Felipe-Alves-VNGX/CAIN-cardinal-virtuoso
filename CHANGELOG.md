@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.12.0 — Player→GM request relay & homebrew Virtue Designer
+- **Players can request affinity actions again.** Conversation outcomes and
+  Quirks are sent to an HQ approval queue (the per-mission slot is spent on
+  request and refunded on denial); the GM approves or denies them in the HQ
+  Review window, reusing the existing scoring logic. socketlib delivers a live
+  toast to the GM (optional dependency; the queue still works without it).
+- **Homebrew Virtue Designer (GM).** A new GM-only window adds custom Virtues
+  (name, epithet, glyph, likes/dislikes/food, blasphemy, bond text, quirks, bond
+  reactions) and can hide canonical ones. The effective virtue set is rebuilt
+  live from world settings; bond reactions resolve defensively around hidden keys.
+- **Docs.** SPECS and USER_STORIES brought to current parity (1.6–1.12).
+
 ## 1.11.0 — GM-gated affinity actions & contraband send/review flow
 - **Affinity actions are now GM-only.** Players can no longer self-score their
   own bonds. In Conversation, the "speak as Bond" selector and the
