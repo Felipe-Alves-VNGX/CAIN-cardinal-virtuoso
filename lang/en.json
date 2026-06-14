@@ -91,6 +91,15 @@
   "cain-cardinal-virtuoso.review.empty": "No contraband awaiting review.",
   "cain-cardinal-virtuoso.review.needValue": "Enter an affinity value.",
 
+  "cain-cardinal-virtuoso.req.askConv": "Request outcome",
+  "cain-cardinal-virtuoso.req.send": "Send to HQ",
+  "cain-cardinal-virtuoso.req.pending": "Pending requests",
+  "cain-cardinal-virtuoso.req.approve": "Approve",
+  "cain-cardinal-virtuoso.req.deny": "Deny",
+  "cain-cardinal-virtuoso.req.noOutcome": "(no outcome marked)",
+  "cain-cardinal-virtuoso.req.notifyConv": "Conversation with {name} awaiting approval.",
+  "cain-cardinal-virtuoso.req.notifyQuirk": "Quirk \"{quirk}\" for {name} awaiting approval.",
+
   "cain-cardinal-virtuoso.gift.heading": "Gift a Contraband Item",
   "cain-cardinal-virtuoso.gift.item": "Item",
   "cain-cardinal-virtuoso.gift.fresh": "Within 12h of deployment (fresh bonus)",

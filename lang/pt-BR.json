@@ -91,6 +91,15 @@
   "cain-cardinal-virtuoso.review.empty": "Nenhum contrabando aguardando revisão.",
   "cain-cardinal-virtuoso.review.needValue": "Informe um valor de afinidade.",
 
+  "cain-cardinal-virtuoso.req.askConv": "Pedir desfecho",
+  "cain-cardinal-virtuoso.req.send": "Enviar ao HQ",
+  "cain-cardinal-virtuoso.req.pending": "Pedidos pendentes",
+  "cain-cardinal-virtuoso.req.approve": "Aprovar",
+  "cain-cardinal-virtuoso.req.deny": "Negar",
+  "cain-cardinal-virtuoso.req.noOutcome": "(sem desfecho marcado)",
+  "cain-cardinal-virtuoso.req.notifyConv": "Conversa com {name} aguardando aprovação.",
+  "cain-cardinal-virtuoso.req.notifyQuirk": "Quirk \"{quirk}\" para {name} aguardando aprovação.",
+
   "cain-cardinal-virtuoso.gift.heading": "Presentear com Contrabando",
   "cain-cardinal-virtuoso.gift.item": "Item",
   "cain-cardinal-virtuoso.gift.fresh": "Em até 12h do deploy (bônus de frescor)",
