@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.12.1 — Clearer request approval (preview + GM override)
+- **The HQ review now shows the requested result.** Each pending Conversation/Quirk
+  request displays its expected affinity delta (`previewConvDelta`, a read-only
+  estimate that consumes no buffs) next to the marked outcome.
+- **GMs can approve with a different result.** An optional numeric field lets the GM
+  override the requested delta on approval (softened by an active Apology Note, like
+  a free contraband score); leaving it blank applies the requested outcome as before.
+  The override also resolves Quirk requests whose definition no longer exists.
+
 ## 1.12.0 — Player→GM request relay & homebrew Virtue Designer
 - **Players can request affinity actions again.** Conversation outcomes and
   Quirks are sent to an HQ approval queue (the per-mission slot is spent on
