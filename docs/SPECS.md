@@ -242,6 +242,8 @@ manager interno suporta focar/minimizar janelas da desktop KIM.
 | `rankReq` | world | String | `"5,10,18"` | Requisitos de afinidade I/II/III (parseado em `RULES.rankReq`) |
 | `enforcePacing` | world | Boolean | `true` | Liga/desliga o ritmo de vínculos (GM sempre ignora) |
 | `rankReqByVirtue` | world | Object | `{}` | Overrides de requisito por Virtue (editado na janela Tracker; `config:false`) |
+| `customVirtues` | world | Object | `{}` | Virtudes homebrew `{ <key>: <def> }` (editado no Designer de Virtudes; `config:false`) |
+| `hiddenVirtues` | world | Array | `[]` | Chaves canônicas ocultadas pelo GM (`config:false`) |
 
 ---
 
@@ -276,8 +278,10 @@ manager interno suporta focar/minimizar janelas da desktop KIM.
 ## 9. Itens não implementados (roadmap)
 
 - Export SQLite (cross-system / Power BI) como feature server-side separada.
-- **Relay player→GM via socketlib** — em implementação nesta versão (ver §11).
-- **Virtudes homebrew (editor in-app)** — em implementação nesta versão (ver §10).
+
+Entregue na 1.12:
+- **Relay player→GM via socketlib** — implementado (ver §11).
+- **Virtudes homebrew (editor in-app)** — implementado (ver §10).
 
 ---
 
