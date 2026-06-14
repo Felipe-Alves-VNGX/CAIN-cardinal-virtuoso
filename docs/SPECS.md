@@ -333,10 +333,17 @@ o GM resolve. Mantém o GM no controle do balanceamento.
 `quirkUses[qIndex]` — espelhando `sendContraband`. `denyRequest` faz refund do slot.
 
 ### 11.3 Aprovação
-`approveRequest` reusa o cálculo de `convDelta`/`applyQuirk` **sem** re-incrementar o
-slot já gasto, aplicando afinidade + `finalize`, e desenfileira.
+`approveRequest(d, reqId, { value })` reusa o cálculo de `convDelta`/`applyQuirk`
+**sem** re-incrementar o slot já gasto, aplicando afinidade + `finalize`, e desenfileira.
 > **Nuance do buff Page:** como `convDelta` roda na **aprovação**, o `buffs.page`
 > (Page of One-liners) é consumido quando o GM aprova a Conversation, não no pedido.
+
+A Review do GM mostra o **resultado solicitado** (rótulos marcados + delta previsto via
+`previewConvDelta`, um cálculo read-only que não consome buffs). O GM pode **aprovar
+alterando o resultado**: o campo numérico opcional `reqval-<id>` passa `value` para
+`approveRequest`, que aplica esse delta livre (suavizado por um Apology Note ativo,
+como um score livre de contraband) em vez do cálculo solicitado. Em branco = aplica o
+solicitado. O override também resolve quirks cuja definição não exista mais.
 
 ### 11.4 Transporte
 `scripts/relay.mjs` usa socketlib (`executeForAllGMs("notifyGM", …)`) para um toast
