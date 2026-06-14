@@ -317,9 +317,26 @@ export class KimController {
       id: e.id, item: e.item, glyph: e.glyph,
       name: VIRTUES[e.vkey]?.name ?? e.vkey
     }));
+    const requests = (d.requestQueue ?? []).map(rq => {
+      const v = VIRTUES[rq.vkey];
+      let detail = "";
+      if (rq.kind === "conversation") {
+        const p = rq.payload ?? {};
+        const parts = [];
+        if (p.topicHit === "like") parts.push(loc("cain-cardinal-virtuoso.conv.likedTopic"));
+        if (p.topicHit === "dislike") parts.push(loc("cain-cardinal-virtuoso.conv.dislikedTopic"));
+        if (p.goodTalk) parts.push(loc("cain-cardinal-virtuoso.conv.wentWell"));
+        if (p.connectionHit) parts.push(loc("cain-cardinal-virtuoso.conv.connection"));
+        detail = parts.join(" · ") || loc("cain-cardinal-virtuoso.req.noOutcome");
+      } else if (rq.kind === "quirk") {
+        detail = v?.quirks?.[rq.payload?.qIndex]?.label ?? "";
+      }
+      return { id: rq.id, kind: rq.kind, name: v?.name ?? rq.vkey, glyph: v?.glyph ?? "?", detail };
+    });
     return {
       isGM: game.user.isGM, who: this.targetUser.name,
       queue, hasQueue: queue.length > 0,
+      requests, hasRequests: requests.length > 0,
       cats: [
         { kind: "favorite", label: loc("cain-cardinal-virtuoso.drop.favorite"), delta: `+${r.favorite}` },
         { kind: "like",     label: loc("cain-cardinal-virtuoso.drop.like"),     delta: `+${r.like}` },
@@ -668,7 +685,9 @@ export class KimController {
     this._delegate(body, {
       scoreCat: (ev, el)    => this.onScoreContraband(el.dataset.id, el.dataset.kind, null),
       scoreVal: (ev, el, b) => this.onScoreContraband(el.dataset.id, null, b),
-      discardContra: (ev, el) => this.onDiscardContraband(el.dataset.id)
+      discardContra: (ev, el) => this.onDiscardContraband(el.dataset.id),
+      approveReq: (ev, el) => this.onApproveRequest(el.dataset.id),
+      denyReq:    (ev, el) => this.onDenyRequest(el.dataset.id)
     });
   }
 
@@ -754,6 +773,20 @@ export class KimController {
     if (!entryId) return;
     const d = this.syncedDossier();
     await this.commit(d, discardContraband(d, entryId));
+  }
+
+  async onApproveRequest(reqId) {
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
+    if (!reqId) return;
+    const d = this.syncedDossier();
+    await this.commit(d, approveRequest(d, reqId));
+  }
+
+  async onDenyRequest(reqId) {
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
+    if (!reqId) return;
+    const d = this.syncedDossier();
+    await this.commit(d, denyRequest(d, reqId));
   }
 
   /* Send an inventory gift item: apply its automated effect, then spend one. */

@@ -29,8 +29,28 @@
     </li>
     {{/each}}
   </ul>
-  {{else}}
-  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.review.empty'}}</div>
   {{/if}}
+
+  {{#if hasRequests}}
+  <div class="cv-kim-review-sub">{{localize 'cain-cardinal-virtuoso.req.pending'}}</div>
+  <ul class="cv-kim-review-list">
+    {{#each requests}}
+    <li class="cv-kim-review-item">
+      <div class="cv-kim-review-head">
+        <span class="cv-kim-review-name">{{glyph}} {{detail}}</span>
+        <span class="cv-kim-review-to">&#9656; {{name}}</span>
+      </div>
+      <div class="cv-kim-review-free">
+        <button type="button" class="cv-btn cv-btn-on" data-action="approveReq" data-id="{{id}}">{{localize 'cain-cardinal-virtuoso.req.approve'}}</button>
+        <button type="button" class="cv-btn cv-btn-bad" data-action="denyReq" data-id="{{id}}">{{localize 'cain-cardinal-virtuoso.req.deny'}}</button>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+  {{/if}}
+
+  {{#unless hasQueue}}{{#unless hasRequests}}
+  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.review.empty'}}</div>
+  {{/unless}}{{/unless}}
 
 </div>
