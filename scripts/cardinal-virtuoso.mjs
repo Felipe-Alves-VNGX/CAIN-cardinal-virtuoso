@@ -191,13 +191,11 @@ function withShield(slot, delta) {
   return -Math.max(0, -delta - reduction);
 }
 
-export function applyConversation(d, vkey, { topicHit, goodTalk, connectionHit }) {
-  const slot = d.virtues[vkey];
-  const lock = slotLocked(slot);
-  if (lock) return { ok: false, msg: lock };
-  if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
-  let delta = 0;
-  let note = "";
+/* Pure outcome scoring for a Conversation: returns { delta, note } honoring the
+   Page-of-One-liners buff (consumes it on a disliked topic) and the Apology
+   shield. Does NOT touch convUsed or affinity — callers apply and finalize. */
+function convDelta(slot, { topicHit, goodTalk, connectionHit }) {
+  let delta = 0, note = "";
   if (topicHit === "like") delta += RULES.conv.topic;
   if (topicHit === "dislike") {
     if (slot.buffs?.page) { slot.buffs.page = false; note = " (Page of One-liners: disliked-topic penalty ignored, +1D)"; }
@@ -205,7 +203,15 @@ export function applyConversation(d, vkey, { topicHit, goodTalk, connectionHit }
   }
   if (goodTalk) delta += RULES.conv.goodTalk;
   if (connectionHit) delta += RULES.conv.connection;
-  delta = withShield(slot, delta);
+  return { delta: withShield(slot, delta), note };
+}
+
+export function applyConversation(d, vkey, outcome) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
+  const { delta, note } = convDelta(slot, outcome);
   slot.affinity += delta;
   if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
   slot.convUsed += 1;
