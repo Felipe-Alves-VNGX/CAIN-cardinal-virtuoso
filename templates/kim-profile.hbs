@@ -54,21 +54,19 @@
     </div>
   </details>
 
-  {{#if isGM}}
   {{#if quirks.length}}
   <details class="cv-kim-p-sec">
     <summary>{{localize 'cain-cardinal-virtuoso.prof.quirks'}}</summary>
     <div class="cv-kim-quirks">
       {{#each quirks}}
       <button type="button" class="cv-btn cv-quirk {{#if good}}cv-btn-good{{else}}cv-btn-bad{{/if}}"
-              data-action="quirk" data-q="{{index}}" data-virtue="{{../key}}">
+              data-action="{{#if ../isGM}}quirk{{else}}reqQuirk{{/if}}" data-q="{{index}}" data-virtue="{{../key}}">
         <span class="cv-quirk-d">{{deltaStr}}</span> {{label}}
         {{#if perMission}}<small>({{used}}/{{perMission}})</small>{{/if}}
       </button>
       {{/each}}
     </div>
   </details>
-  {{/if}}
   {{/if}}
 
   {{#if isGM}}

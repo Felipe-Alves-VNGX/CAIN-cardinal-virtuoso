@@ -684,6 +684,7 @@ export class KimController {
       toggleBond:  (ev, el) => this.onToggleBond(el.dataset.virtue),
       openDrop:    (ev, el) => this.openContraband(el.dataset.virtue),
       quirk:       (ev, el) => this.onQuirk(el.dataset.virtue, Number(el.dataset.q)),
+      reqQuirk:    (ev, el) => this.onRequestQuirk(el.dataset.virtue, Number(el.dataset.q)),
       adjust:      (ev, el, b) => this.onAdjust(el.dataset.virtue, b),
       openProfile: (ev, el) => this.openProfile(el.dataset.virtue)
     });
@@ -777,6 +778,16 @@ export class KimController {
     const d = this.syncedDossier();
     if (!(await this.journalGate(d, key, (VIRTUES[key].quirks?.[qIndex]?.delta ?? 0) < 0))) return;
     await this.commit(d, applyQuirk(d, key, qIndex));
+  }
+
+  async onRequestQuirk(key, qIndex) {
+    if (!this.canWrite() || game.user.isGM) return;
+    const d = this.syncedDossier();
+    const r = requestQuirk(d, key, qIndex);
+    if (await this.commit(d, r)) {
+      const label = VIRTUES[key]?.quirks?.[qIndex]?.label ?? "";
+      relayNotifyGM({ fromUserId: game.user.id, label: fmt("cain-cardinal-virtuoso.req.notifyQuirk", { name: VIRTUES[key].name, quirk: label }) });
+    }
   }
 
   async onAdjust(key, body) {
