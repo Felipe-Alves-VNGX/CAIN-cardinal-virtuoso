@@ -34,7 +34,10 @@ export function blankDossier() {
     codename: "", mission: 1, x2mod: false, gateUser: false,
     covert: 0, cat: 0, hqStock: 0, extraBonds: 0, log: [], virtues,
     achievements: {}, // key → true once unlocked (auto-detected or GM-toggled)
-    soloMissions: 0   // consecutive completed missions with no active bond
+    soloMissions: 0,  // consecutive completed missions with no active bond
+    // Contraband the player has sent but the GM hasn't scored yet. Each entry:
+    // { id, vkey, item, glyph, ts }. Affinity is applied only when the GM scores it.
+    contrabandQueue: []
   };
 }
 
@@ -206,28 +209,64 @@ export function applyConversation(d, vkey, { topicHit, goodTalk, connectionHit }
   return finalize(d, vkey, `${VIRTUES[vkey].name} — Conversation: ${delta >= 0 ? "+" : ""}${delta} affinity.${note}`);
 }
 
-export function applyContraband(d, vkey, kind) {
+/* Standard contraband category → affinity delta. */
+const CONTRA_DELTA = {
+  favorite: () => RULES.contraband.favorite,
+  like:     () => RULES.contraband.like,
+  neutral:  () => RULES.contraband.neutral,
+  dislike:  () => RULES.contraband.dislike
+};
+
+/* Player action: queue an inventory item as contraband for a bonded virtue.
+   Spends an HQ stock unit and a per-mission contraband slot, but applies NO
+   affinity — the GM scores it later from the review window. */
+export function sendContraband(d, vkey, item, glyph = "") {
   const slot = d.virtues[vkey];
-  const isHate = kind === "hatemail";
-  if (!slot.bonded && !isHate) return { ok: false, msg: "Not bonded (only hate-mail allowed)." };
+  if (!slot?.bonded) return { ok: false, msg: "Not bonded yet." };
   if (slot.pendingBreak) return { ok: false, msg: "Heart Break — bond shatters when the mission closes." };
-  if (!isHate && slot.contraUsed >= contraCap(d))
+  if (slot.contraUsed >= contraCap(d))
     return { ok: false, msg: `Contraband limit reached (${contraCap(d)}/mission).` };
   if (d.hqStock <= 0) return { ok: false, msg: "No contraband in HQ stock." };
-  let delta = 0;
-  switch (kind) {
-    case "favorite": delta = RULES.contraband.favorite; break;
-    case "like": delta = RULES.contraband.like; break;
-    case "dislike": delta = RULES.contraband.dislike; break;
-    case "neutral": delta = RULES.contraband.neutral; break;
-    case "hatemail": delta = Math.min(0, RULES.contraband.dislike); break; // only ever down
-  }
-  if (!isHate) delta = withShield(slot, delta); // hate-mail loss is intentional — never shielded
+  const name = String(item ?? "").trim();
+  if (!name) return { ok: false, msg: "No item selected." };
+  d.hqStock -= 1;
+  slot.contraUsed += 1;
+  d.contrabandQueue ??= [];
+  const id = `cq-${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
+  d.contrabandQueue.push({ id, vkey, item: name, glyph: String(glyph ?? ""), ts: Date.now() });
+  pushLog(d, `${VIRTUES[vkey].name} — Contraband sent: "${name}" (awaiting HQ review).`);
+  return { ok: true, msg: `Sent "${name}" to ${VIRTUES[vkey].name}. Awaiting HQ review.`, id };
+}
+
+/* GM action: score a queued contraband entry. Pass a numeric `value` for a free
+   adjustment, or a `kind` for the standard FAV/LIKE/NEUTRAL/DISLIKE delta.
+   Applies affinity (loss softened by an active Apology Note), then dequeues. */
+export function scoreContraband(d, entryId, { kind, value } = {}) {
+  d.contrabandQueue ??= [];
+  const idx = d.contrabandQueue.findIndex(e => e.id === entryId);
+  if (idx < 0) return { ok: false, msg: "Contraband entry not found." };
+  const entry = d.contrabandQueue[idx];
+  const slot = d.virtues[entry.vkey];
+  if (!slot) { d.contrabandQueue.splice(idx, 1); return { ok: false, msg: "Recipient no longer exists." }; }
+  let delta = Number(value);
+  if (!Number.isFinite(delta)) delta = CONTRA_DELTA[kind]?.() ?? 0;
+  delta = withShield(slot, Math.round(delta));
   slot.affinity += delta;
   if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
-  d.hqStock -= 1;
-  if (!isHate) slot.contraUsed += 1;
-  return finalize(d, vkey, `${VIRTUES[vkey].name} — Contraband (${kind}): ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+  d.contrabandQueue.splice(idx, 1);
+  return finalize(d, entry.vkey,
+    `${VIRTUES[entry.vkey].name} — Contraband "${entry.item}" scored: ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+}
+
+/* GM action: drop a queued contraband entry without scoring it. */
+export function discardContraband(d, entryId) {
+  d.contrabandQueue ??= [];
+  const idx = d.contrabandQueue.findIndex(e => e.id === entryId);
+  if (idx < 0) return { ok: false, msg: "Contraband entry not found." };
+  const entry = d.contrabandQueue.splice(idx, 1)[0];
+  const who = VIRTUES[entry.vkey] ? `${VIRTUES[entry.vkey].name} — ` : "";
+  pushLog(d, `${who}Contraband "${entry.item}" discarded by HQ.`);
+  return { ok: true, msg: `Discarded "${entry.item}".` };
 }
 
 export function applyQuirk(d, vkey, qIndex) {

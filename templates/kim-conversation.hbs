@@ -25,14 +25,17 @@
 
   {{#if canWrite}}
   <div class="cv-kim-compose">
+    {{#if isGM}}
     <select class="cv-msg-as" name="msgAs">
       <option value="op">{{localize 'cain-cardinal-virtuoso.conv.you'}}</option>
       <option value="virtue">{{name}}</option>
     </select>
+    {{/if}}
     <input type="text" name="msg" placeholder="{{localize 'cain-cardinal-virtuoso.conv.typeMsg'}}" autocomplete="off" />
     <button type="button" class="cv-btn" data-action="send" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.conv.send'}}</button>
   </div>
 
+  {{#if isGM}}
   <div class="cv-kim-marks">
     <div class="cv-kim-marks-lbl">{{localize 'cain-cardinal-virtuoso.conv.endOfTalk'}} <small>({{convUsed}}/{{convCap}})</small></div>
     <div class="cv-conv-checks" data-virtue="{{key}}">
@@ -43,6 +46,7 @@
     </div>
     <button type="button" class="cv-btn cv-btn-on" data-action="conv" data-virtue="{{key}}">{{localize 'cain-cardinal-virtuoso.conv.markConv'}}</button>
   </div>
+  {{/if}}
   {{/if}}
 
 </div>

@@ -1,0 +1,36 @@
+<div class="cv-kim cv-kim-review">
+
+  <div class="cv-kim-drop-head">
+    <span class="cv-kim-drop-ico">📋</span>
+    <div class="cv-kim-drop-id">
+      <span class="cv-kim-drop-title">{{localize 'cain-cardinal-virtuoso.review.title'}}</span>
+      <span class="cv-kim-drop-sub">{{who}}</span>
+    </div>
+  </div>
+
+  {{#if hasQueue}}
+  <ul class="cv-kim-review-list">
+    {{#each queue}}
+    <li class="cv-kim-review-item">
+      <div class="cv-kim-review-head">
+        <span class="cv-kim-review-name">{{glyph}} {{item}}</span>
+        <span class="cv-kim-review-to">&#9656; {{name}}</span>
+      </div>
+      <div class="cv-kim-review-cats">
+        {{#each ../cats}}
+        <button type="button" class="cv-btn" data-action="scoreCat" data-id="{{../id}}" data-kind="{{kind}}">{{label}} {{delta}}</button>
+        {{/each}}
+      </div>
+      <div class="cv-kim-review-free">
+        <input type="number" name="val-{{id}}" step="1" placeholder="±" />
+        <button type="button" class="cv-btn cv-btn-on" data-action="scoreVal" data-id="{{id}}">{{localize 'cain-cardinal-virtuoso.review.apply'}}</button>
+        <button type="button" class="cv-btn cv-btn-bad" data-action="discardContra" data-id="{{id}}">{{localize 'cain-cardinal-virtuoso.review.discard'}}</button>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <div class="cv-kim-empty-state">{{localize 'cain-cardinal-virtuoso.review.empty'}}</div>
+  {{/if}}
+
+</div>

@@ -54,6 +54,7 @@
     </div>
   </details>
 
+  {{#if isGM}}
   {{#if quirks.length}}
   <details class="cv-kim-p-sec">
     <summary>{{localize 'cain-cardinal-virtuoso.prof.quirks'}}</summary>
@@ -67,6 +68,7 @@
       {{/each}}
     </div>
   </details>
+  {{/if}}
   {{/if}}
 
   {{#if isGM}}

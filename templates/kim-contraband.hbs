@@ -13,23 +13,35 @@
   <div class="cv-kim-drop-form">
     <label>{{localize 'cain-cardinal-virtuoso.drop.recipient'}}</label>
     <select name="dropVirtue">
-      {{#each contacts}}
-      <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}} — {{status}}{{#if bonded}} ({{used}}/{{../cap}}){{else}} {{localize 'cain-cardinal-virtuoso.drop.noBond'}}{{/if}}</option>
+      {{#each dropRecipients}}
+      <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}} — {{status}} ({{used}}/{{../cap}})</option>
+      {{else}}
+      <option value="" disabled selected>{{localize 'cain-cardinal-virtuoso.drop.noBondRecipient'}}</option>
       {{/each}}
     </select>
 
     <label>{{localize 'cain-cardinal-virtuoso.drop.package'}}</label>
-    <select name="dropKind">
-      <option value="favorite">{{localize 'cain-cardinal-virtuoso.drop.favorite'}} (+3)</option>
-      <option value="like">{{localize 'cain-cardinal-virtuoso.drop.like'}} (+3)</option>
-      <option value="neutral">{{localize 'cain-cardinal-virtuoso.drop.neutral'}} (+1)</option>
-      <option value="dislike">{{localize 'cain-cardinal-virtuoso.drop.dislike'}} (&minus;3)</option>
-      <option value="hatemail">{{localize 'cain-cardinal-virtuoso.drop.hatemail'}} (&minus;3)</option>
+    {{#if hasItems}}
+    <select name="dropItem">
+      {{#each items}}
+      <option value="{{itemId}}">{{name}} ×{{qty}}</option>
+      {{/each}}
     </select>
-
     <button type="button" class="cv-btn cv-btn-on" data-action="drop">{{localize 'cain-cardinal-virtuoso.drop.send'}} &#9656;</button>
+    {{else}}
+    <div class="cv-kim-empty">{{localize 'cain-cardinal-virtuoso.drop.noItems'}}</div>
+    {{/if}}
   </div>
   <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.drop.hint'}}</div>
+
+  {{#if hasPending}}
+  <div class="cv-kim-drop-pending">
+    <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.drop.pending'}}</div>
+    <ul class="cv-kim-notes">
+      {{#each pending}}<li>{{glyph}} {{item}} &#9656; {{name}}</li>{{/each}}
+    </ul>
+  </div>
+  {{/if}}
 
   <div class="cv-kim-drop-gifts">
     <div class="cv-kim-group">{{localize 'cain-cardinal-virtuoso.gift.heading'}}</div>
