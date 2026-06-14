@@ -1,4 +1,4 @@
-import { VIRTUES, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
+import { VIRTUES, CANONICAL_VIRTUES, rebuildVirtues, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
 
 const MOD = "cain-cardinal-virtuoso";
 const FLAG = "dossier";
@@ -84,6 +84,31 @@ export async function setVirtueRankReq(vkey, trip) {
   try { await game.settings.set(MOD, "rankReqByVirtue", RANK_REQ_BY_VIRTUE); }
   catch (e) { console.warn(`${MOD} | could not persist per-virtue rank reqs`, e); }
 }
+
+/* ----------------------------------------------------------------------------
+ * HOMEBREW VIRTUES — GM-managed custom set persisted in world settings, applied
+ * by rebuilding the in-place VIRTUES object so all live references update.
+ * -------------------------------------------------------------------------- */
+export async function saveCustomVirtue(key, def) {
+  const all = { ...(game.settings.get(MOD, "customVirtues") || {}) };
+  all[key] = def;
+  await game.settings.set(MOD, "customVirtues", all);
+  rebuildVirtues({ custom: all, hidden: game.settings.get(MOD, "hiddenVirtues") || [] });
+}
+export async function deleteCustomVirtue(key) {
+  const all = { ...(game.settings.get(MOD, "customVirtues") || {}) };
+  delete all[key];
+  await game.settings.set(MOD, "customVirtues", all);
+  rebuildVirtues({ custom: all, hidden: game.settings.get(MOD, "hiddenVirtues") || [] });
+}
+export async function setVirtueHidden(key, hidden) {
+  const set = new Set(game.settings.get(MOD, "hiddenVirtues") || []);
+  if (hidden) set.add(key); else set.delete(key);
+  const arr = [...set];
+  await game.settings.set(MOD, "hiddenVirtues", arr);
+  rebuildVirtues({ custom: game.settings.get(MOD, "customVirtues") || {}, hidden: arr });
+}
+export function isCanonical(key) { return key in CANONICAL_VIRTUES; }
 
 /* Effective minimum affinity for a rank, including broken-bond penalties.
    Pass vkey to honor per-virtue overrides; without it, the global tuning applies. */
@@ -638,11 +663,22 @@ Hooks.once("init", () => {
   game.settings.register(MOD, "rankReqByVirtue", {
     scope: "world", config: false, type: Object, default: {}
   });
+  // Homebrew virtues — edited in the KIM Virtue Designer, not here.
+  game.settings.register(MOD, "customVirtues", {
+    scope: "world", config: false, type: Object, default: {}
+  });
+  game.settings.register(MOD, "hiddenVirtues", {
+    scope: "world", config: false, type: Array, default: []
+  });
 });
 
 Hooks.once("ready", () => {
   parseRankReq(game.settings.get(MOD, "rankReq"));
   RANK_REQ_BY_VIRTUE = game.settings.get(MOD, "rankReqByVirtue") || {};
+  rebuildVirtues({
+    custom: game.settings.get(MOD, "customVirtues") || {},
+    hidden: game.settings.get(MOD, "hiddenVirtues") || []
+  });
   game.cainCardinalVirtuoso ??= {};
   // Legacy macro entry point now opens the KIM desktop (the standalone grid was retired in 1.4).
   game.cainCardinalVirtuoso.open = () => game.cainCardinalVirtuoso.openDesktop?.();
