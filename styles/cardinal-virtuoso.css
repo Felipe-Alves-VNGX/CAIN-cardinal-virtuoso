@@ -756,3 +756,5 @@
 .cv-virt-form { display: flex; flex-direction: column; gap: 4px; padding: 4px; }
 .cv-virt-form label { display: flex; flex-direction: column; font-size: 10px; gap: 2px; }
 .cv-kim-req { border-top: 1px dashed var(--gray-d); }
+.cv-kim-req-line { font-size: 10px; color: var(--text-dim); padding: 2px 0; }
+.cv-kim-req-delta strong { color: var(--text); }

@@ -97,6 +97,8 @@
   "cain-cardinal-virtuoso.req.approve": "Aprovar",
   "cain-cardinal-virtuoso.req.deny": "Negar",
   "cain-cardinal-virtuoso.req.noOutcome": "(sem desfecho marcado)",
+  "cain-cardinal-virtuoso.req.requested": "Solicitado:",
+  "cain-cardinal-virtuoso.req.overrideHint": "Deixe em branco para aplicar o resultado solicitado, ou digite um delta de afinidade diferente para aprovar com alteração.",
   "cain-cardinal-virtuoso.req.notifyConv": "Conversa com {name} aguardando aprovação.",
   "cain-cardinal-virtuoso.req.notifyQuirk": "Quirk \"{quirk}\" para {name} aguardando aprovação.",
 

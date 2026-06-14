@@ -231,6 +231,18 @@ function convDelta(slot, { topicHit, goodTalk, connectionHit }) {
   return { delta: withShield(slot, delta), note };
 }
 
+/* Read-only estimate of a Conversation outcome's delta: mirrors convDelta but
+   consumes no buffs and applies no shield. For previewing a pending request in
+   the HQ review window so the GM sees the requested result before approving. */
+export function previewConvDelta(slot, { topicHit, goodTalk, connectionHit } = {}) {
+  let delta = 0;
+  if (topicHit === "like") delta += RULES.conv.topic;
+  if (topicHit === "dislike" && !slot?.buffs?.page) delta += RULES.conv.dislike;
+  if (goodTalk) delta += RULES.conv.goodTalk;
+  if (connectionHit) delta += RULES.conv.connection;
+  return delta;
+}
+
 export function applyConversation(d, vkey, outcome) {
   const slot = d.virtues[vkey];
   const lock = slotLocked(slot);
@@ -359,16 +371,26 @@ export function requestQuirk(d, vkey, qIndex) {
 }
 
 /* GM: approve a queued request — applies affinity reusing the scoring logic,
-   WITHOUT re-spending the slot (already spent at request time), then dequeues. */
-export function approveRequest(d, reqId) {
+   WITHOUT re-spending the slot (already spent at request time), then dequeues.
+   Pass `{ value }` to override the requested outcome with a free affinity delta
+   (softened by an active Apology Note, like a free contraband score). */
+export function approveRequest(d, reqId, { value } = {}) {
   d.requestQueue ??= [];
   const idx = d.requestQueue.findIndex(r => r.id === reqId);
   if (idx < 0) return { ok: false, msg: "Request not found." };
   const req = d.requestQueue[idx];
   const slot = d.virtues[req.vkey];
   if (!slot) { d.requestQueue.splice(idx, 1); return { ok: false, msg: "Recipient no longer exists." }; }
+  const override = Number(value);
+  const hasOverride = Number.isFinite(override);
   d.requestQueue.splice(idx, 1);
   if (req.kind === "conversation") {
+    if (hasOverride) {
+      const delta = withShield(slot, Math.round(override));
+      slot.affinity += delta;
+      if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
+      return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Conversation approved (GM override): ${delta >= 0 ? "+" : ""}${delta} affinity.`);
+    }
     const { delta, note } = convDelta(slot, req.payload ?? {});
     slot.affinity += delta;
     if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
@@ -376,11 +398,13 @@ export function approveRequest(d, reqId) {
   }
   if (req.kind === "quirk") {
     const quirk = VIRTUES[req.vkey]?.quirks?.[req.payload?.qIndex];
-    if (!quirk) return { ok: false, msg: "Quirk no longer exists." };
-    const qd = withShield(slot, quirk.delta);
+    if (!quirk && !hasOverride) return { ok: false, msg: "Quirk no longer exists." };
+    const qd = withShield(slot, hasOverride ? Math.round(override) : quirk.delta);
     slot.affinity += qd;
     if (qd < 0) slot.missionLoss = (slot.missionLoss | 0) - qd;
-    return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Quirk "${quirk.label}" approved: ${qd >= 0 ? "+" : ""}${qd} affinity.`);
+    const label = quirk?.label ?? "—";
+    const tag = hasOverride ? " (GM override)" : "";
+    return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Quirk "${label}" approved${tag}: ${qd >= 0 ? "+" : ""}${qd} affinity.`);
   }
   return { ok: false, msg: "Unknown request kind." };
 }

@@ -9,7 +9,7 @@ import {
   getDossier, setDossier, wirePortraits,
   applyConversation, sendContraband, scoreContraband, discardContraband,
   applyQuirk, applyAdjustment, applyGift,
-  requestConversation, requestQuirk, approveRequest, denyRequest,
+  requestConversation, requestQuirk, approveRequest, denyRequest, previewConvDelta,
   toggleBond, endMission, timeOff, pushChat,
   rankRequirement, baseRankReq, qualifiedRank, bondedCount, bondSlotsAllowed,
   contrabandHaul, blankDossier, foundryConfirm,
@@ -320,7 +320,8 @@ export class KimController {
     }));
     const requests = (d.requestQueue ?? []).map(rq => {
       const v = VIRTUES[rq.vkey];
-      let detail = "";
+      const slot = d.virtues[rq.vkey];
+      let detail = "", delta = 0;
       if (rq.kind === "conversation") {
         const p = rq.payload ?? {};
         const parts = [];
@@ -329,10 +330,16 @@ export class KimController {
         if (p.goodTalk) parts.push(loc("cain-cardinal-virtuoso.conv.wentWell"));
         if (p.connectionHit) parts.push(loc("cain-cardinal-virtuoso.conv.connection"));
         detail = parts.join(" · ") || loc("cain-cardinal-virtuoso.req.noOutcome");
+        delta = previewConvDelta(slot, p);
       } else if (rq.kind === "quirk") {
-        detail = v?.quirks?.[rq.payload?.qIndex]?.label ?? "";
+        const quirk = v?.quirks?.[rq.payload?.qIndex];
+        detail = quirk?.label ?? "";
+        delta = quirk?.delta ?? 0;
       }
-      return { id: rq.id, kind: rq.kind, name: v?.name ?? rq.vkey, glyph: v?.glyph ?? "?", detail };
+      return {
+        id: rq.id, kind: rq.kind, name: v?.name ?? rq.vkey, glyph: v?.glyph ?? "?",
+        detail, delta: `${delta >= 0 ? "+" : ""}${delta}`
+      };
     });
     return {
       isGM: game.user.isGM, who: this.targetUser.name,
@@ -717,7 +724,7 @@ export class KimController {
       scoreCat: (ev, el)    => this.onScoreContraband(el.dataset.id, el.dataset.kind, null),
       scoreVal: (ev, el, b) => this.onScoreContraband(el.dataset.id, null, b),
       discardContra: (ev, el) => this.onDiscardContraband(el.dataset.id),
-      approveReq: (ev, el) => this.onApproveRequest(el.dataset.id),
+      approveReq: (ev, el, b) => this.onApproveRequest(el.dataset.id, b),
       denyReq:    (ev, el) => this.onDenyRequest(el.dataset.id)
     });
   }
@@ -806,11 +813,13 @@ export class KimController {
     await this.commit(d, discardContraband(d, entryId));
   }
 
-  async onApproveRequest(reqId) {
+  async onApproveRequest(reqId, body) {
     if (!game.user.isGM) return ui.notifications.warn("No clearance.");
     if (!reqId) return;
+    const raw = body?.querySelector(`input[name="reqval-${reqId}"]`)?.value?.trim();
+    const value = raw === "" || raw == null ? undefined : Number(raw);
     const d = this.syncedDossier();
-    await this.commit(d, approveRequest(d, reqId));
+    await this.commit(d, approveRequest(d, reqId, { value }));
   }
 
   async onDenyRequest(reqId) {
