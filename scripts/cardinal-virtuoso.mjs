@@ -37,7 +37,10 @@ export function blankDossier() {
     soloMissions: 0,  // consecutive completed missions with no active bond
     // Contraband the player has sent but the GM hasn't scored yet. Each entry:
     // { id, vkey, item, glyph, ts }. Affinity is applied only when the GM scores it.
-    contrabandQueue: []
+    contrabandQueue: [],
+    // Requests the player sent for the GM to approve (Conversation/Quirk). Each:
+    // { id, kind, vkey, payload, ts }. Affinity is applied only on approval.
+    requestQueue: []
   };
 }
 
