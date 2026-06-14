@@ -36,7 +36,7 @@
         <span class="cv-kim-dot cv-kim-dot-{{statusClass}}"></span>
         <span class="cv-kim-av">
           <span class="cv-kim-av-glyph">{{glyph}}</span>
-          <img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />
+          {{#if portrait}}<img class="cv-portrait cv-kim-av-img" src="{{portrait}}" alt="{{name}}" />{{/if}}
         </span>
         <span class="cv-kim-c-id">
           <span class="cv-kim-c-name">{{name}} <em>{{epithet}}</em></span>
@@ -56,8 +56,8 @@
       {{#if canWrite}}<button type="button" class="cv-btn" data-action="openHQ">⚙ HQ</button>{{/if}}
     </div>
     <div class="cv-kim-foot-row">
-      <span class="cv-kim-stat">{{localize 'cain-cardinal-virtuoso.kim.bonds'}} {{bondsUsed}}/{{bondsAllowed}}</span>
-      <span class="cv-kim-stat">{{localize 'cain-cardinal-virtuoso.kim.hqStock'}} {{hqStock}}</span>
+      <span class="cv-kim-stat {{#if bondsOver}}cv-kim-stat-over{{/if}}" {{#if bondsOver}}title="{{localize 'cain-cardinal-virtuoso.kim.bondsOver'}}"{{/if}}>{{localize 'cain-cardinal-virtuoso.kim.bonds'}} {{bondsUsed}}/{{bondsAllowed}}{{#if bondsOver}} ⚠{{/if}}</span>
+      <span class="cv-kim-stat {{#unless hqStock}}cv-kim-stat-empty{{/unless}}">{{localize 'cain-cardinal-virtuoso.kim.hqStock'}} {{hqStock}}</span>
       <button type="button" class="cv-btn" data-action="openTracker">📊 {{localize 'cain-cardinal-virtuoso.kim.trackers'}}</button>
       {{#if canWrite}}<button type="button" class="cv-btn" data-action="openDrop">📦 {{localize 'cain-cardinal-virtuoso.kim.deadDrop'}}</button>{{/if}}
     </div>

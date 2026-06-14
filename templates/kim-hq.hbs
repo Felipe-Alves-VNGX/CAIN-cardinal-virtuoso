@@ -16,6 +16,7 @@
       <input type="text" name="codename" value="{{codename}}" maxlength="24" placeholder="—" />
     </div>
 
+    {{#if isGM}}
     <div class="cv-kim-hq-row cv-kim-hq-check">
       <label><input type="checkbox" name="x2mod" {{#if x2mod}}checked{{/if}} /> {{localize 'cain-cardinal-virtuoso.hq.x2mod'}}</label>
     </div>
@@ -37,6 +38,7 @@
         <input type="number" name="hqStock" value="{{hqStock}}" min="0" max="{{hqCap}}" />
       </div>
     </div>
+    {{/if}}
 
     <div class="cv-kim-hq-readout">
       <span>{{localize 'cain-cardinal-virtuoso.hq.nextHaul'}} +{{nextHaul}}</span>
@@ -45,7 +47,7 @@
 
     <div class="cv-kim-hq-actions">
       <button type="button" class="cv-btn cv-btn-on" data-action="saveHQ">{{localize 'cain-cardinal-virtuoso.hq.save'}}</button>
-      <button type="button" class="cv-btn cv-btn-bad" data-action="reset">{{localize 'cain-cardinal-virtuoso.hq.wipe'}}</button>
+      {{#if isGM}}<button type="button" class="cv-btn cv-btn-bad" data-action="reset">{{localize 'cain-cardinal-virtuoso.hq.wipe'}}</button>{{/if}}
     </div>
   </div>
   <div class="cv-kim-drop-hint">{{localize 'cain-cardinal-virtuoso.hq.hint'}} {{hqCap}}.</div>

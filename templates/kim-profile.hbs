@@ -3,7 +3,7 @@
   <div class="cv-kim-p-head">
     <div class="cv-kim-p-av">
       <span class="cv-kim-p-glyph">{{glyph}}</span>
-      <img class="cv-portrait cv-kim-p-img" src="{{portrait}}" alt="{{name}}" />
+      {{#if portrait}}<img class="cv-portrait cv-kim-p-img" src="{{portrait}}" alt="{{name}}" />{{/if}}
     </div>
     <div class="cv-kim-p-id">
       <span class="cv-kim-p-name">{{name}}</span>
@@ -13,9 +13,17 @@
   </div>
 
   <div class="cv-kim-p-aff">
-    <span class="cv-kim-aff-num">{{localize 'cain-cardinal-virtuoso.prof.affinity'}} {{affinity}}</span>
-    <span class="cv-kim-aff-rank">{{localize 'cain-cardinal-virtuoso.prof.bond'}} {{rank}}</span>
-    {{#if reqNext}}<span class="cv-kim-aff-next">({{localize 'cain-cardinal-virtuoso.prof.next'}}: {{reqNext}})</span>{{/if}}
+    <div class="cv-kim-p-aff-head">
+      <span class="cv-aff-num {{#if affCrit}}crit{{/if}}">{{affinity}}</span>
+      <div class="cv-kim-p-aff-meta">
+        <span class="cv-kim-aff-lbl">{{localize 'cain-cardinal-virtuoso.prof.affinity'}}</span>
+        <span class="cv-kim-aff-rank">{{localize 'cain-cardinal-virtuoso.prof.bond'}} {{rank}}</span>
+        {{#if reqNext}}<span class="cv-kim-aff-next">{{localize 'cain-cardinal-virtuoso.prof.next'}}: {{reqNext}}</span>{{/if}}
+      </div>
+    </div>
+    <div class="cv-trk-bar cv-kim-p-aff-bar">
+      <div class="cv-trk-fill" style="width: {{affPct}}%;"></div>
+    </div>
   </div>
 
   {{#if bondText}}<div class="cv-kim-p-bond">{{bondText}}</div>{{/if}}

@@ -448,13 +448,22 @@
 }
 .cv-window-ico { width: 16px; text-align: center; }
 .cv-window-title { flex: 1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cv-window-close {
+.cv-window-close, .cv-window-min {
   width: 16px; height: 14px; font-size: 9px; line-height: 1; display: grid; place-items: center;
   background: var(--gray); border: 0; cursor: pointer; color: #000;
   box-shadow: inset -1px -1px 0 var(--gray-dd), inset 1px 1px 0 var(--light), inset -2px -2px 0 var(--gray-d);
 }
-.cv-window-close:active { box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light); }
+.cv-window-min { font-weight: bold; align-items: end; padding-bottom: 2px; }
+.cv-window-close:active, .cv-window-min:active { box-shadow: inset 1px 1px 0 var(--gray-dd), inset -1px -1px 0 var(--light); }
 .cv-window-body { flex: 1; min-height: 0; overflow: auto; margin: 0 2px 2px; background: var(--gray); }
+
+/* Inactive (unfocused) window: muted titlebar — Win95 authentic focus cue. */
+.cv-window-bar { transition: background .08s; }
+.cv-window:not(.cv-window-active) > .cv-window-bar {
+  background: linear-gradient(90deg, var(--title-off-a), var(--title-off-b));
+  color: #d8d8d8;
+}
+.cv-window-min-hidden { display: none !important; }
 
 /* ── Button variants ─────────────────────────────────────── */
 .cv-btn-good { color: var(--good); font-weight: bold; }
@@ -527,6 +536,8 @@
 .cv-kim-foot-row label { font-size: 10px; color: var(--text-dim); }
 .cv-kim-foot-row input[type="text"] { flex: 1; font-family: var(--sys); font-size: 11px; }
 .cv-kim-stat { font-size: 10px; color: var(--text-dim); }
+.cv-kim-stat-over { color: var(--cain); font-weight: bold; }
+.cv-kim-stat-empty { color: #b06a00; font-weight: bold; }
 
 /* ── Profile window ──────────────────────────────────────── */
 .cv-kim-profile { display: flex; flex-direction: column; gap: 6px; }
@@ -539,11 +550,14 @@
 .cv-kim-p-name { font-weight: bold; font-size: 15px; }
 .cv-kim-p-epi { font-size: 11px; font-style: italic; color: var(--text-dim); }
 .cv-kim-p-status { font-size: 11px; font-weight: bold; margin-top: 2px; }
-.cv-kim-p-aff { display: flex; align-items: baseline; gap: 8px; padding: 3px 5px; background: var(--face);
+.cv-kim-p-aff { padding: 5px 6px; background: var(--face);
   box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
-.cv-kim-aff-num { font-weight: bold; font-size: 13px; color: var(--title-a); }
-.cv-kim-aff-rank { font-weight: bold; }
+.cv-kim-p-aff-head { display: flex; align-items: center; gap: 9px; }
+.cv-kim-p-aff-meta { display: flex; flex-direction: column; gap: 1px; }
+.cv-kim-aff-lbl { font-size: 9px; font-weight: bold; letter-spacing: .06em; color: var(--text-dim); text-transform: uppercase; }
+.cv-kim-aff-rank { font-weight: bold; font-size: 12px; }
 .cv-kim-aff-next { font-size: 10px; color: var(--text-dim); }
+.cv-kim-p-aff-bar { height: 14px; margin: 6px 2px 2px; }
 .cv-kim-p-bond { font-size: 10px; color: var(--text-dim); padding: 2px 0; }
 .cv-kim-p-actions { display: flex; gap: 5px; }
 .cv-kim-p-sec { background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-d); }
