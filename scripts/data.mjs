@@ -6,7 +6,7 @@
 // portrait: optional override path (relative to module root) for a virtue's portrait.
 //   By default each virtue auto-loads img/virtues/<key>.webp; just drop files there.
 //   A missing file falls back to the glyph placeholder automatically.
-export const VIRTUES = {
+export const CANONICAL_VIRTUES = {
   justice: {
     name: "Justice", epithet: "The Executioner", glyph: "I", portrait: "",
     likes: ["Religious Debate", "Classical Music", "Cleanliness"],
@@ -195,6 +195,25 @@ export const VIRTUES = {
     bondReactions: {}
   }
 };
+
+/* Effective virtue set: a SINGLE object mutated in place so every
+   `import { VIRTUES }` keeps a live reference. Defaults to the canonical nine;
+   rebuildVirtues() reshapes it from world settings (homebrew + hidden). */
+export const VIRTUES = {};
+function _clone(o) { return JSON.parse(JSON.stringify(o)); }
+export function rebuildVirtues({ custom = {}, hidden = [] } = {}) {
+  for (const k of Object.keys(VIRTUES)) delete VIRTUES[k];
+  const hiddenSet = new Set(hidden);
+  for (const [k, v] of Object.entries(CANONICAL_VIRTUES)) {
+    if (!hiddenSet.has(k)) VIRTUES[k] = _clone(v);
+  }
+  for (const [k, v] of Object.entries(custom || {})) {
+    VIRTUES[k] = VIRTUES[k] ? { ...VIRTUES[k], ..._clone(v) } : _clone(v);
+  }
+  return VIRTUES;
+}
+// Seed with the canonical set at import time (no Foundry globals needed).
+rebuildVirtues();
 
 // Additional Gifts & Guides — regulated objects bought with scrip (XSX) and
 // "dropped" on a VIRTUE from the player's inventory. Each is created as a CAIN
