@@ -646,6 +646,26 @@
 .cv-kim-drop-fresh { grid-column: 1 / -1; display: flex; align-items: center; gap: 5px;
   font-size: 10px; font-weight: normal !important; color: var(--text) !important; }
 
+/* Pending-contraband list shown to the player after sending. */
+.cv-kim-drop-pending { display: flex; flex-direction: column; padding: 4px 6px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+
+/* ── Contraband Review window (GM) ────────────────────────── */
+.cv-kim-review { display: flex; flex-direction: column; height: 100%; gap: 6px; }
+.cv-kim-review-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1;
+  display: flex; flex-direction: column; gap: 6px; }
+.cv-kim-review-item { display: flex; flex-direction: column; gap: 4px; padding: 6px;
+  background: #fff; box-shadow: inset -1px -1px 0 var(--light), inset 1px 1px 0 var(--gray-dd),
+              inset -2px -2px 0 var(--face), inset 2px 2px 0 var(--gray-d); }
+.cv-kim-review-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.cv-kim-review-name { font-weight: bold; font-size: 12px; }
+.cv-kim-review-to { font-size: 10px; color: var(--text-dim); }
+.cv-kim-review-cats { display: flex; flex-wrap: wrap; gap: 4px; }
+.cv-kim-review-cats .cv-btn { flex: 1 1 auto; font-size: 10px; }
+.cv-kim-review-free { display: flex; gap: 4px; align-items: center; }
+.cv-kim-review-free input[type="number"] { width: 56px; font-family: var(--sys); font-size: 11px; }
+
 /* ── HQ Console window ────────────────────────────────────── */
 .cv-kim-hq { display: flex; flex-direction: column; height: 100%; gap: 6px; }
 .cv-kim-hq-form { display: flex; flex-direction: column; gap: 6px; padding: 6px;

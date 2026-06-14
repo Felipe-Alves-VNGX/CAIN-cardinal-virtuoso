@@ -7,7 +7,8 @@
 import { VIRTUES, RANK_FLAVOR, RULES, GIFTS, ACHIEVEMENTS, GOOD_ENDING_REWARDS } from "./data.mjs";
 import {
   getDossier, setDossier, wirePortraits,
-  applyConversation, applyContraband, applyQuirk, applyAdjustment, applyGift,
+  applyConversation, sendContraband, scoreContraband, discardContraband,
+  applyQuirk, applyAdjustment, applyGift,
   toggleBond, endMission, timeOff, pushChat,
   rankRequirement, baseRankReq, qualifiedRank, bondedCount, bondSlotsAllowed,
   contrabandHaul, blankDossier, foundryConfirm,
@@ -272,13 +273,57 @@ export class KimController {
       };
     });
     const gifts = this.ownedGifts(this.targetActor);
+    const items = this.ownedContraband(this.targetActor);
+    const pending = (d.contrabandQueue ?? []).map(e => ({
+      id: e.id, item: e.item, glyph: e.glyph,
+      name: VIRTUES[e.vkey]?.name ?? e.vkey
+    }));
     return {
-      canWrite: this.canWrite(),
+      canWrite: this.canWrite(), isGM: game.user.isGM,
       hqStock: d.hqStock, hqCap: RULES.contraband.hqCap, cap,
       contacts,
+      dropRecipients: contacts.filter(c => c.bonded),
+      items, hasItems: items.length > 0,
       giftRecipients: contacts.filter(c => c.bonded),
       gifts, hasGifts: gifts.length > 0,
+      pending, hasPending: pending.length > 0,
       drops: [...d.log].reverse().filter(l => l.includes("Contraband") || GIFT_NAMES.some(n => l.includes(n))).slice(0, 12)
+    };
+  }
+
+  /* Non-gift inventory items the target carries on their CAIN sheet — these are
+     the contraband a player can send for the GM to score. Gift-flagged items are
+     excluded (they keep their own automated Dead Drop flow). */
+  ownedContraband(actor) {
+    if (!actor) return [];
+    const out = [];
+    for (const it of actor.items ?? []) {
+      if (it.type !== "item") continue;
+      const giftKey = it.getFlag?.(MOD, "gift") ?? it.flags?.[MOD]?.gift;
+      if (giftKey && GIFTS[giftKey]) continue;
+      out.push({ itemId: it.id, name: it.name, qty: it.system?.quantity ?? 1 });
+    }
+    return out;
+  }
+
+  /* GM contraband review: the queue of items players sent but the GM hasn't
+     scored yet, plus the standard category shortcuts for the score buttons. */
+  contrabandReviewCtx() {
+    const d = this.syncedDossier();
+    const r = RULES.contraband;
+    const queue = (d.contrabandQueue ?? []).map(e => ({
+      id: e.id, item: e.item, glyph: e.glyph,
+      name: VIRTUES[e.vkey]?.name ?? e.vkey
+    }));
+    return {
+      isGM: game.user.isGM, who: this.targetUser.name,
+      queue, hasQueue: queue.length > 0,
+      cats: [
+        { kind: "favorite", label: loc("cain-cardinal-virtuoso.drop.favorite"), delta: `+${r.favorite}` },
+        { kind: "like",     label: loc("cain-cardinal-virtuoso.drop.like"),     delta: `+${r.like}` },
+        { kind: "neutral",  label: loc("cain-cardinal-virtuoso.drop.neutral"),  delta: `+${r.neutral}` },
+        { kind: "dislike",  label: loc("cain-cardinal-virtuoso.drop.dislike"),  delta: `${r.dislike}` }
+      ]
     };
   }
 
@@ -350,7 +395,8 @@ export class KimController {
     return {
       key, name: v.name, glyph: v.glyph, portrait: portraitPath(key, v),
       status: st.label, statusClass: st.cls, chat,
-      canWrite: this.canWrite(), convUsed: slot.convUsed, convCap: convCap(d)
+      canWrite: this.canWrite(), isGM: game.user.isGM,
+      convUsed: slot.convUsed, convCap: convCap(d)
     };
   }
 
@@ -463,6 +509,18 @@ export class KimController {
     });
   }
 
+  async openContrabandReview() {
+    if (!game.user.isGM) return;
+    const id = "kim-contra-review";
+    const html = await renderTpl(T("kim-contraband-review.hbs"), this.contrabandReviewCtx());
+    this._open.add(id);
+    this.wm.open(id, {
+      title: loc("cain-cardinal-virtuoso.review.title"), icon: "📋", width: 360, height: 480,
+      html, onBody: (b) => this.wireContrabandReview(b),
+      onClose: () => this._open.delete(id)
+    });
+  }
+
   async openHQ() {
     const id = "kim-hq";
     const html = await renderTpl(T("kim-hq.hbs"), this.hqCtx());
@@ -525,12 +583,14 @@ export class KimController {
       } else if (id === "kim-contraband") {
         const body = this.wm.bodyEl(id);
         const selKey = body?.querySelector('select[name="dropVirtue"]')?.value;
-        const selKind = body?.querySelector('select[name="dropKind"]')?.value;
+        const selItem = body?.querySelector('select[name="dropItem"]')?.value;
         this.wm.setHtml(id, await renderTpl(T("kim-contraband.hbs"), this.contrabandCtx(selKey)), (b) => {
-          const kindSel = b.querySelector('select[name="dropKind"]');
-          if (kindSel && selKind) kindSel.value = selKind;
+          const itemSel = b.querySelector('select[name="dropItem"]');
+          if (itemSel && selItem) itemSel.value = selItem;
           this.wireContraband(b);
         });
+      } else if (id === "kim-contra-review") {
+        this.wm.setHtml(id, await renderTpl(T("kim-contraband-review.hbs"), this.contrabandReviewCtx()), (b) => this.wireContrabandReview(b));
       } else if (id.startsWith("kim-conv-")) {
         const key = id.slice("kim-conv-".length);
         const prev = this.wm.bodyEl(id)?.querySelector('input[name="msg"]')?.value ?? "";
@@ -572,6 +632,7 @@ export class KimController {
       openProfile:(ev, el) => { ev.stopPropagation(); this.openProfile(el.dataset.virtue); },
       pickUser:   (ev, el) => this.onPickUser(el.value),
       openDrop:    () => this.openContraband(),
+      openReview:  () => this.openContrabandReview(),
       openHQ:      () => this.openHQ(),
       openTracker: () => this.openTracker(),
       openAchievements: () => this.openAchievements(),
@@ -596,8 +657,16 @@ export class KimController {
 
   wireContraband(body) {
     this._delegate(body, {
-      drop: (ev, el, b) => this.onDrop(b),
+      drop: (ev, el, b) => this.onSendContraband(b),
       dropGift: (ev, el, b) => this.onDropGift(b)
+    });
+  }
+
+  wireContrabandReview(body) {
+    this._delegate(body, {
+      scoreCat: (ev, el)    => this.onScoreContraband(el.dataset.id, el.dataset.kind, null),
+      scoreVal: (ev, el, b) => this.onScoreContraband(el.dataset.id, null, b),
+      discardContra: (ev, el) => this.onDiscardContraband(el.dataset.id)
     });
   }
 
@@ -649,14 +718,38 @@ export class KimController {
     await this.commit(d, r);
   }
 
-  async onDrop(body) {
+  async onSendContraband(body) {
     if (!this.canWrite()) return ui.notifications.warn("No clearance.");
     const key = body.querySelector('select[name="dropVirtue"]')?.value;
-    const kind = body.querySelector('select[name="dropKind"]')?.value;
-    if (!key || !kind) return;
+    const itemId = body.querySelector('select[name="dropItem"]')?.value;
+    if (!key || !itemId) return;
+    const item = this.targetActor?.items?.get(itemId);
+    if (!item) return ui.notifications.warn(loc("cain-cardinal-virtuoso.drop.itemGone"));
     const d = this.syncedDossier();
-    if (!(await this.journalGate(d, key, kind === "dislike" || kind === "hatemail"))) return;
-    await this.commit(d, applyContraband(d, key, kind));
+    const r = sendContraband(d, key, item.name);
+    if (r.ok === false) return ui.notifications.warn(r.msg);
+    await this.consumeItem(item); // sending spends one unit, like a gift
+    await this.commit(d, r);
+  }
+
+  async onScoreContraband(entryId, kind, body) {
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
+    if (!entryId) return;
+    let value;
+    if (!kind) {
+      const raw = body?.querySelector(`input[name="val-${entryId}"]`)?.value;
+      value = parseInt(raw, 10);
+      if (!Number.isFinite(value)) return ui.notifications.warn(loc("cain-cardinal-virtuoso.review.needValue"));
+    }
+    const d = this.syncedDossier();
+    await this.commit(d, scoreContraband(d, entryId, { kind, value }));
+  }
+
+  async onDiscardContraband(entryId) {
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
+    if (!entryId) return;
+    const d = this.syncedDossier();
+    await this.commit(d, discardContraband(d, entryId));
   }
 
   /* Send an inventory gift item: apply its automated effect, then spend one. */
@@ -677,7 +770,7 @@ export class KimController {
   }
 
   async onQuirk(key, qIndex) {
-    if (!this.canWrite()) return ui.notifications.warn("No clearance.");
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
     const d = this.syncedDossier();
     if (!(await this.journalGate(d, key, (VIRTUES[key].quirks?.[qIndex]?.delta ?? 0) < 0))) return;
     await this.commit(d, applyQuirk(d, key, qIndex));
@@ -691,7 +784,7 @@ export class KimController {
   }
 
   async onConv(key, body) {
-    if (!this.canWrite()) return ui.notifications.warn("No clearance.");
+    if (!game.user.isGM) return ui.notifications.warn("No clearance.");
     const box = body.querySelector(`.cv-conv-checks[data-virtue="${key}"]`);
     const get = (n) => !!box?.querySelector(`input[data-cv="${n}"]`)?.checked;
     const d = this.syncedDossier();
@@ -708,7 +801,8 @@ export class KimController {
   async onSend(key, body) {
     if (!key || !this.canWrite()) return;
     const input = body.querySelector('input[name="msg"]');
-    const who = body.querySelector('select[name="msgAs"]')?.value === "virtue" ? "virtue" : "op";
+    // Only the GM may speak as the Bond; players always post as themselves.
+    const who = (game.user.isGM && body.querySelector('select[name="msgAs"]')?.value === "virtue") ? "virtue" : "op";
     const text = input?.value ?? "";
     const d = this.syncedDossier();
     const r = pushChat(d, key, who, text);
