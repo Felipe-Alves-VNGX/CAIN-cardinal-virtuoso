@@ -294,6 +294,91 @@ export function applyQuirk(d, vkey, qIndex) {
   return finalize(d, vkey, `${VIRTUES[vkey].name} — Quirk "${quirk.label}": ${qd >= 0 ? "+" : ""}${qd} affinity.`);
 }
 
+/* ----------------------------------------------------------------------------
+ * REQUEST RELAY — player enqueues, GM approves. Spends the per-mission slot at
+ * request time (like sendContraband); deny refunds it; approve scores it.
+ * -------------------------------------------------------------------------- */
+function newReqId() { return `rq-${Date.now()}-${Math.floor(Math.random() * 1e4)}`; }
+
+/* Player: request a Conversation outcome. Validates like applyConversation but
+   applies NO affinity — spends the slot and queues for GM approval. */
+export function requestConversation(d, vkey, outcome) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  if (slot.convUsed >= convCap(d)) return { ok: false, msg: `Conversation limit reached (${convCap(d)}/mission).` };
+  slot.convUsed += 1;
+  d.requestQueue ??= [];
+  const id = newReqId();
+  d.requestQueue.push({ id, kind: "conversation", vkey, payload: { ...outcome }, ts: Date.now() });
+  pushLog(d, `${VIRTUES[vkey].name} — Conversation requested (awaiting HQ approval).`);
+  return { ok: true, msg: `Conversation with ${VIRTUES[vkey].name} sent for HQ approval.`, id };
+}
+
+/* Player: request a Quirk. Validates like applyQuirk; spends the per-mission use. */
+export function requestQuirk(d, vkey, qIndex) {
+  const slot = d.virtues[vkey];
+  const lock = slotLocked(slot);
+  if (lock) return { ok: false, msg: lock };
+  const quirk = VIRTUES[vkey]?.quirks?.[qIndex];
+  if (!quirk) return { ok: false, msg: "Unknown quirk." };
+  const used = slot.quirkUses[qIndex] ?? 0;
+  if (quirk.perMission && used >= quirk.perMission)
+    return { ok: false, msg: `Quirk limit reached (${quirk.perMission}/mission).` };
+  slot.quirkUses[qIndex] = used + 1;
+  d.requestQueue ??= [];
+  const id = newReqId();
+  d.requestQueue.push({ id, kind: "quirk", vkey, payload: { qIndex }, ts: Date.now() });
+  pushLog(d, `${VIRTUES[vkey].name} — Quirk "${quirk.label}" requested (awaiting HQ approval).`);
+  return { ok: true, msg: `Quirk "${quirk.label}" sent for HQ approval.`, id };
+}
+
+/* GM: approve a queued request — applies affinity reusing the scoring logic,
+   WITHOUT re-spending the slot (already spent at request time), then dequeues. */
+export function approveRequest(d, reqId) {
+  d.requestQueue ??= [];
+  const idx = d.requestQueue.findIndex(r => r.id === reqId);
+  if (idx < 0) return { ok: false, msg: "Request not found." };
+  const req = d.requestQueue[idx];
+  const slot = d.virtues[req.vkey];
+  if (!slot) { d.requestQueue.splice(idx, 1); return { ok: false, msg: "Recipient no longer exists." }; }
+  d.requestQueue.splice(idx, 1);
+  if (req.kind === "conversation") {
+    const { delta, note } = convDelta(slot, req.payload ?? {});
+    slot.affinity += delta;
+    if (delta < 0) slot.missionLoss = (slot.missionLoss | 0) - delta;
+    return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Conversation approved: ${delta >= 0 ? "+" : ""}${delta} affinity.${note}`);
+  }
+  if (req.kind === "quirk") {
+    const quirk = VIRTUES[req.vkey]?.quirks?.[req.payload?.qIndex];
+    if (!quirk) return { ok: false, msg: "Quirk no longer exists." };
+    const qd = withShield(slot, quirk.delta);
+    slot.affinity += qd;
+    if (qd < 0) slot.missionLoss = (slot.missionLoss | 0) - qd;
+    return finalize(d, req.vkey, `${VIRTUES[req.vkey].name} — Quirk "${quirk.label}" approved: ${qd >= 0 ? "+" : ""}${qd} affinity.`);
+  }
+  return { ok: false, msg: "Unknown request kind." };
+}
+
+/* GM: deny a queued request — refunds the spent slot and dequeues. */
+export function denyRequest(d, reqId) {
+  d.requestQueue ??= [];
+  const idx = d.requestQueue.findIndex(r => r.id === reqId);
+  if (idx < 0) return { ok: false, msg: "Request not found." };
+  const req = d.requestQueue.splice(idx, 1)[0];
+  const slot = d.virtues[req.vkey];
+  if (slot) {
+    if (req.kind === "conversation") slot.convUsed = Math.max(0, (slot.convUsed | 0) - 1);
+    if (req.kind === "quirk") {
+      const qi = req.payload?.qIndex;
+      slot.quirkUses[qi] = Math.max(0, (slot.quirkUses[qi] | 0) - 1);
+    }
+  }
+  const who = VIRTUES[req.vkey]?.name ?? req.vkey;
+  pushLog(d, `${who} — ${req.kind} request denied by HQ (slot refunded).`);
+  return { ok: true, msg: `${req.kind} request denied.` };
+}
+
 /* Admin-only free adjustment (table rulings, undocumented quirks). */
 export function applyAdjustment(d, vkey, delta) {
   const slot = d.virtues[vkey];
